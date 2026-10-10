@@ -53,7 +53,8 @@ Prueba también a 390 px y 1440 px de ancho. En móvil, abre el menú para busca
 public/
   artwork/             Ilustraciones SVG originales
   media/               Clip WebM original de demostración
-  _redirects           Fallback SPA para Cloudflare Pages
+  .assetsignore        Excluye el archivo heredado de Pages del Worker
+  _redirects           Regla heredada de Pages comentada, excluida del Worker
 src/
   components/          Layout, tarjetas, comentarios, reproductor y avisos
   pages/               Inicio, catálogo, ficha, episodio, acceso, admin y 404
@@ -62,6 +63,7 @@ src/
   services/            Catálogo público, catálogo interno de admin y comentarios
   main.tsx             Árbol de rutas
   styles.css           Tailwind y sistema visual responsive
+wrangler.jsonc         Configuración de Cloudflare Workers Static Assets
 ```
 
 Los servicios son el punto previsto para sustituir las fixtures por una integración futura. No existe cliente, SDK ni configuración activa de Supabase o AniList en esta fase.
@@ -94,26 +96,71 @@ Solo **Yoru Demo** tiene una fuente disponible. Los servidores 02 y 03 muestran 
 - Recuperación de contraseña, verificación de correo y políticas del servicio.
 - Despliegue real y configuración de dominio.
 
-## Cloudflare Pages
+## Cloudflare Workers Static Assets
 
-Proyecto preparado para alojamiento estático con rutas SPA. Para desplegar posteriormente desde este repositorio:
+El despliegue está preparado para **Cloudflare Workers Static Assets**. React, Vite, TypeScript y React Router se mantienen; esta fase no necesita código de Worker ni backend. Wrangler está incluido como dependencia de desarrollo y su versión queda fijada por `package-lock.json`.
 
-- Preset: **Vite**.
-- Directorio raíz: raíz de `anime-platform` (si es un monorepo, indica su carpeta).
-- Comando de compilación: `npm run build`.
-- Directorio de salida: `dist`.
-- Versión de Node: 22.12+ (o 24 LTS).
+`wrangler.jsonc` configura:
 
-Vite copia `public/_redirects` a `dist/_redirects`. La regla `/* /index.html 200` permite abrir o recargar directamente rutas como `/anime/el-viaje-de-aoi`. No se ha publicado el proyecto ni se han configurado servicios externos.
+```json
+{
+  "name": "anime-platform",
+  "compatibility_date": "2026-10-10",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
+```
+
+Wrangler sirve los archivos de `dist/` y, cuando una ruta de navegación no corresponde a un archivo, entrega `index.html` para que React Router la resuelva. Esto permite abrir o recargar directamente `/catalogo`, `/anime/el-viaje-de-aoi` y `/anime/el-viaje-de-aoi/episodio/1`. Las rutas desconocidas y las fichas sin publicar siguen mostrando el estado 404 de la aplicación.
+
+### Probar localmente con Workers
+
+```bash
+npm ci
+npm run dev:worker
+```
+
+Este comando compila la aplicación y ejecuta `wrangler dev` localmente (normalmente en `http://localhost:8787`). No despliega ni requiere iniciar sesión en Cloudflare. Comprueba las rutas anteriores entrando directamente y recargándolas. `npm run dev` conserva el servidor Vite para el desarrollo habitual y `npm run preview` conserva la vista previa de Vite.
+
+### Validar el despliegue sin publicar
+
+```bash
+npm run build
+npx wrangler deploy --dry-run --outdir work/wrangler-dry-run
+```
+
+`--dry-run` valida y prepara el despliegue localmente, sin subirlo a Cloudflare.
+
+### Desplegar cuando corresponda
+
+Requiere una cuenta de Cloudflare con permisos para Workers. Desde la raíz de `anime-platform`:
+
+```bash
+npm ci
+npx wrangler login
+npm run deploy
+```
+
+`npm run deploy` compila y ejecuta `wrangler deploy` para el Worker **anime-platform**. Wrangler devuelve la dirección desplegada. Para CI, configura `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID` como secretos del entorno, sin guardarlos en el repositorio.
+
+Para conectar el repositorio mediante **Workers Builds**, selecciona la carpeta raíz de `anime-platform`, utiliza Node 24 LTS (`.nvmrc`), `npm run build` como comando de compilación y `npx wrangler deploy` como comando de despliegue. La carpeta de assets la declara `wrangler.jsonc`; no hace falta configurar un proyecto de Pages.
+
+Vite copia `public/.assetsignore` a `dist/.assetsignore`. Ese archivo excluye `_redirects` del despliegue de Workers: la regla heredada de Pages se conserva como comentario en el proyecto para evitar que el servidor local de Wrangler la interprete, y el fallback SPA del Worker lo controla `assets.not_found_handling`. El estado local de Wrangler queda excluido por `.gitignore`.
+
+No se ha desplegado el Worker ni se ha modificado la cuenta de Cloudflare.
 
 ## Verificación de esta entrega
 
 - `npm run build`: correcto (comprobación TypeScript y generación de `dist/`).
+- Wrangler 4.149.0: `wrangler deploy --dry-run` correcto, sin publicar.
+- Chromium sobre `wrangler dev`: navegación directa y recarga de nueve rutas correctas, incluida la regla de publicación; CSS, JavaScript, SVG y WebM servidos correctamente, sin errores de ejecución.
 - `npm test`: once pruebas del catálogo, la regla de publicación y las rutas públicas/administrativas. Cubren ocultación de títulos sin episodios, conservación interna y publicación al añadir el primer episodio.
 - Chromium: búsqueda, filtros y reinicio, carrusel, orden de episodios, reproducción del clip local, navegación, spoilers, visibilidad de contraseña, administración y rutas 404 comprobados.
 - Doce rutas comprobadas a 320, 390, 768, 1024 y 1440 px sin desbordamientos horizontales de página.
 - 24 comprobaciones automatizadas con axe en móvil y escritorio sin incidencias detectadas; esto no sustituye una auditoría manual completa de accesibilidad.
 - Error de carga del clip, reintento y último episodio comprobados.
-- Recursos locales y `_redirects` presentes en `dist/`.
+- Recursos locales y `.assetsignore` presentes en `dist/`; el archivo heredado `_redirects` está excluido de los assets del Worker.
 
-Las pruebas de navegador se hicieron localmente. El despliegue en Cloudflare Pages queda pendiente.
+Las pruebas de navegador se hicieron localmente. El despliegue en Cloudflare Workers queda pendiente.

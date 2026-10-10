@@ -6,3 +6,4 @@ work/
 .env.*
 !.env.example
 *.tsbuildinfo
+.wrangler/

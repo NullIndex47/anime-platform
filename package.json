@@ -10,23 +10,26 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
+    "dev:worker": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
     "test": "node --import tsx --test --test-isolation=none src/services/*.test.ts"
   },
   "dependencies": {
+    "lucide-react": "^0.468.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router": "^7.9.4",
-    "lucide-react": "^0.468.0"
+    "react-router": "^7.9.4"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.1.14",
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.4",
-    "@tailwindcss/vite": "^4.1.14",
     "tailwindcss": "^4.1.14",
+    "tsx": "^4.20.6",
     "typescript": "~5.9.3",
     "vite": "^7.1.9",
-    "tsx": "^4.20.6"
+    "wrangler": "^4.149.0"
   }
 }
