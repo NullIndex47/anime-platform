@@ -1,0 +1,9 @@
+node_modules/
+dist/
+work/
+*.local
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+.wrangler/

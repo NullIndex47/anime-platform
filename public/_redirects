@@ -1,0 +1,2 @@
+# Legacy Pages fallback (inactive): /* /index.html 200
+# Workers SPA fallback is configured in wrangler.jsonc, not in redirect rules.

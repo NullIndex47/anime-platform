@@ -1,0 +1,2 @@
+# Preserve the legacy Pages file locally; Workers uses its SPA asset handling.
+_redirects
