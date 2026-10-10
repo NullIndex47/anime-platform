@@ -12,7 +12,9 @@
     "preview": "vite preview --host 0.0.0.0",
     "dev:worker": "npm run build && wrangler dev",
     "deploy": "npm run build && wrangler deploy",
-    "test": "node --import tsx --test --test-isolation=none src/services/*.test.ts"
+    "test": "node --import tsx --test --test-isolation=none src/services/*.test.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:worker": "E2E_SERVER=worker playwright test"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
@@ -21,6 +23,7 @@
     "react-router": "^7.9.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/vite": "^4.1.14",
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.0",
