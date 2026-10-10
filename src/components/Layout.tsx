@@ -1,5 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
+import {
+  Link, NavLink, Outlet, matchPath, useLocation, useNavigate,
+} from "react-router";
+import { catalogService } from "../services/catalog";
 import { ArrowUpRight, Search, Menu, X, Moon, ArrowRight } from "lucide-react";
 export function Logo() {
   return (
@@ -19,7 +22,16 @@ export function Layout() {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [location.pathname]);
   useEffect(() => {
-    document.title = "YORU — Descubre otro mundo";
+    const match = matchPath(
+      "/anime/:animeId/episodio/:episodeNumber", location.pathname,
+    );
+    const anime = catalogService.find(match?.params.animeId);
+    const episode = anime?.episodes.find(
+      (item) => item.number === Number(match?.params.episodeNumber),
+    );
+    document.title = anime && episode
+      ? `${anime.title} · Episodio ${episode.number}: ${episode.title} — YORU`
+      : "YORU — Descubre otro mundo";
   }, [location.pathname]);
   const submit = (e: FormEvent) => {
     e.preventDefault();

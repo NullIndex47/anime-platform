@@ -29,7 +29,7 @@ export default function Episode() {
           {anime.title} <span>·</span> Duración ficticia: {episode.duration}
         </p>
       </div>
-      <DemoPlayer key={episode.id} poster={anime.artwork} />
+      <DemoPlayer key={`player-${episode.id}`} poster={anime.artwork} />
       <nav className="episode-navigation" aria-label="Navegación de episodios">
         {prev ? (
           <Link
@@ -62,7 +62,11 @@ export default function Episode() {
           </button>
         )}
       </nav>
-      <Comments key={episode.id} animeId={anime.id} episodeNumber={number} />
+      <Comments
+        key={`comments-${episode.id}`}
+        animeId={anime.id}
+        episodeNumber={number}
+      />
     </div>
   );
 }

@@ -7,3 +7,5 @@ work/
 !.env.example
 *.tsbuildinfo
 .wrangler/
+test-results/
+playwright-report/

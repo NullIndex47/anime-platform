@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   MonitorPlay,
   CircleCheck,
@@ -10,6 +10,18 @@ export function DemoPlayer({ poster }: { poster: string }) {
   const [selected, setSelected] = useState("local");
   const [failed, setFailed] = useState(false);
   const server = demoServers.find((item) => item.id === selected)!;
+  // React calls the ref cleanup when an episode, source or error removes the
+  // video. Capture this node rather than a ref that may already point elsewhere.
+  const attachVideo = useCallback((video: HTMLVideoElement | null) => {
+    if (!video) return;
+    // StrictMode also rehearses ref cleanup/setup on the same mounted node.
+    if (server.source) video.setAttribute("src", server.source);
+    return () => {
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
+    };
+  }, [server.source]);
   return (
     <section
       className="player-section"
@@ -32,6 +44,7 @@ export function DemoPlayer({ poster }: { poster: string }) {
           </div>
         ) : (
           <video
+            ref={attachVideo}
             key={server.id}
             controls
             playsInline

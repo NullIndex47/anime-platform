@@ -164,3 +164,21 @@ No se ha desplegado el Worker ni se ha modificado la cuenta de Cloudflare.
 - Recursos locales y `.assetsignore` presentes en `dist/`; el archivo heredado `_redirects` está excluido de los assets del Worker.
 
 Las pruebas de navegador se hicieron localmente. El despliegue en Cloudflare Workers queda pendiente.
+
+### Regresión de navegación del reproductor
+
+`npm run test:e2e` comprueba la navegación en Chromium con Vite.
+`npm run test:e2e:worker` compila y sirve los mismos casos con Wrangler local,
+sin desplegar. Instala Chromium con `npx playwright install chromium` si no está
+instalado; `CHROMIUM_PATH` permite elegir un ejecutable existente.
+
+Los casos cubren todos los animes con varios episodios en escritorio y móvil,
+pulsando «Siguiente», y repiten tres recorridos completos de Aoi con «Anterior»,
+historial, títulos, comentarios y limpieza de vídeos retirados. También cubren
+los botones de servidor y el reintento tras un error. La demo solo tiene un
+servidor disponible: los otros dos permanecen desactivados.
+
+Para contrastar una versión pública, usa su URL completa, por ejemplo:
+`E2E_BASE_URL=https://anime-platform.<subdominio>.workers.dev npm run test:e2e`.
+Este modo no inicia un servidor ni despliega. Los errores conservan una traza
+Playwright en `test-results/` que puede abrirse con `npx playwright show-trace`.
