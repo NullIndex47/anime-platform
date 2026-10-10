@@ -14,7 +14,7 @@ npm run dev
 Abre la dirección que muestre Vite (normalmente `http://localhost:5173`). No hacen falta cuentas, claves ni variables de entorno. `npm ci` utiliza el `package-lock.json` incluido.
 
 ```bash
-npm run test     # Pruebas del servicio local de catálogo
+npm run test     # Pruebas de catálogo, publicación y rutas
 npm run build    # Comprobación estricta de TypeScript y compilación en dist/
 npm run preview  # Servir el resultado de producción, normalmente en el puerto 4173
 ```
@@ -23,10 +23,10 @@ npm run preview  # Servir el resultado de producción, normalmente en el puerto 
 
 - **Inicio:** portada con cuatro destacados seleccionables, buscador, episodios recientes, selección de animes, clasificación demo y enlaces por género.
 - **Catálogo:** búsqueda que ignora acentos y mayúsculas; filtros combinables de género, año, estado y formato; orden por valoración, año o título; estado sin resultados y reinicio de filtros. Los filtros están en la URL para compartir búsquedas.
-- **Ficha:** ilustración original, sinopsis, géneros, información del estudio ficticio, estado, valoración demo y episodios con orden ascendente/descendente. Los títulos próximos muestran su estado sin episodios.
+- **Ficha:** ilustración original, sinopsis, géneros, información del estudio ficticio, estado, valoración demo y episodios con orden ascendente/descendente. Solo se muestran fichas con al menos un episodio disponible; las fichas sin publicar muestran el estado 404.
 - **Episodio:** vídeo HTML5 con controles nativos, clip original local, servidores preparados y navegación entre episodios y ficha. El primer/último episodio desactiva la navegación que no corresponde.
 - **Acceso/registro:** formularios de vista previa, campos etiquetados, control de visibilidad de contraseña y botones de envío deshabilitados.
-- **Administración:** resumen y secciones de animes, episodios, comentarios, usuarios y ajustes. Las tablas permiten consultar las páginas demo; crear, editar y moderar están deshabilitados.
+- **Administración:** resumen y secciones de animes, episodios, comentarios, usuarios y ajustes. Las tablas conservan también los títulos sin publicar y solo enlazan a fichas públicas disponibles; crear, editar y moderar están deshabilitados.
 - **Comentarios:** secciones separadas en ficha y episodio, datos de ejemplo y control funcional para revelar u ocultar spoilers. La publicación está deshabilitada.
 - **Responsive:** escritorio, tablet y móvil, menú móvil, tablas desplazables, enfoque de teclado visible, enlace para saltar al contenido, textos alternativos y soporte de movimiento reducido.
 - **Errores:** página 404 para rutas, animes, episodios y módulos inexistentes; estado de error con reintento del vídeo local.
@@ -40,7 +40,7 @@ npm run preview  # Servir el resultado de producción, normalmente en el puerto 
 | `/catalogo?genre=Fantas%C3%ADa&year=2026`                  | Filtros inicializados desde la URL                              |
 | `/anime/el-viaje-de-aoi`                                   | Información, episodios y comentarios de ficha                   |
 | `/anime/el-viaje-de-aoi/episodio/1`                        | Reproduce el clip, avanza de episodio y revela un spoiler       |
-| `/anime/jardin-de-invierno`                                | Estado próximo sin episodios                                    |
+| `/anime/jardin-de-invierno`                                | Estado 404: anime todavía no publicado                          |
 | `/iniciar-sesion` y `/registro`                            | Formularios pendientes y mostrar/ocultar contraseña             |
 | `/admin` y `/admin/animes`                                 | Resumen y estructura de gestión demo                            |
 | `/anime/no-existe` y `/anime/el-viaje-de-aoi/episodio/999` | Estado 404                                                      |
@@ -59,12 +59,24 @@ src/
   pages/               Inicio, catálogo, ficha, episodio, acceso, admin y 404
   types/               Modelos de anime, episodios, comentarios y servidores
   data/                Fixtures locales, sin llamadas externas
-  services/            Consulta y filtrado de catálogo; lectura de comentarios
+  services/            Catálogo público, catálogo interno de admin y comentarios
   main.tsx             Árbol de rutas
   styles.css           Tailwind y sistema visual responsive
 ```
 
 Los servicios son el punto previsto para sustituir las fixtures por una integración futura. No existe cliente, SDK ni configuración activa de Supabase o AniList en esta fase.
+
+## Regla de publicación
+
+Un anime solo aparece en el catálogo público si tiene al menos un episodio publicado y disponible. En esta fase, `episodes` contiene únicamente los episodios demo publicados; una lista vacía representa un título todavía sin publicar. El estado «En emisión», una valoración o la marca de destacado no sustituyen esta regla.
+
+`catalogService` aplica la regla a listados, búsqueda, destacados, clasificación de portada, últimos episodios, géneros y consultas de ficha. Una URL directa como `/anime/jardin-de-invierno` o `/anime/jardin-de-invierno/episodio/1` muestra el estado 404 existente, sin mostrar su ficha ni comentarios. Al tratarse de una SPA estática, este es un estado de la interfaz, no una respuesta HTTP 404 del servidor.
+
+Los ocho títulos se conservan en `src/data/anime.ts`. `adminCatalogService` consulta el catálogo completo y `/admin/animes` mantiene «Jardín de invierno» sin enlazar a una ficha pública inexistente. El catálogo público contiene siete títulos. Cuando un título tenga su primer episodio disponible, aparecerá automáticamente; si deja de tener episodios, volverá a ocultarse.
+
+Esta separación organiza las fixtures y no sustituye los permisos de un backend: el panel demo sigue siendo público y los datos ficticios forman parte del cliente. Cuando se incorporen borradores de episodios, la consulta del backend deberá distinguirlos explícitamente de los episodios publicados.
+
+Para probarlo, busca «Jardín» en `/catalogo`: no habrá resultados. Abre su URL directa: se mostrará el estado 404. Comprueba `/admin/animes`: el título seguirá en la tabla.
 
 ## Contenido de demostración
 
@@ -97,7 +109,7 @@ Vite copia `public/_redirects` a `dist/_redirects`. La regla `/* /index.html 200
 ## Verificación de esta entrega
 
 - `npm run build`: correcto (comprobación TypeScript y generación de `dist/`).
-- `npm test`: seis pruebas correctas del catálogo.
+- `npm test`: once pruebas del catálogo, la regla de publicación y las rutas públicas/administrativas. Cubren ocultación de títulos sin episodios, conservación interna y publicación al añadir el primer episodio.
 - Chromium: búsqueda, filtros y reinicio, carrusel, orden de episodios, reproducción del clip local, navegación, spoilers, visibilidad de contraseña, administración y rutas 404 comprobados.
 - Doce rutas comprobadas a 320, 390, 768, 1024 y 1440 px sin desbordamientos horizontales de página.
 - 24 comprobaciones automatizadas con axe en móvil y escritorio sin incidencias detectadas; esto no sustituye una auditoría manual completa de accesibilidad.

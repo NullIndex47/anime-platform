@@ -36,20 +36,25 @@ export function filterAnime(items: Anime[], filters: CatalogFilters) {
           : b.rating - a.rating,
     );
 }
+// In this phase, episodes contains only available, published demo episodes.
+export const isPublishedAnime = (item: Anime) => item.episodes.length > 0;
+const listPublishedAnime = () => anime.filter(isPublishedAnime);
+
 export const catalogService = {
-  list: () => anime,
-  find: (id: string | undefined) => anime.find((item) => item.id === id),
-  featured: () => anime.filter((item) => item.featured),
+  list: listPublishedAnime,
+  find: (id: string | undefined) =>
+    listPublishedAnime().find((item) => item.id === id),
+  featured: () => listPublishedAnime().filter((item) => item.featured),
   latest: () =>
-    anime
+    listPublishedAnime()
       .flatMap((item) =>
         item.episodes.map((episode) => ({ anime: item, episode })),
       )
       .sort((a, b) => b.episode.releasedAt.localeCompare(a.episode.releasedAt))
       .slice(0, 8),
   genres: () =>
-    [...new Set(anime.flatMap((item) => item.genres))].sort((a, b) =>
-      a.localeCompare(b, "es"),
+    [...new Set(listPublishedAnime().flatMap((item) => item.genres))].sort(
+      (a, b) => a.localeCompare(b, "es"),
     ),
 };
 export const formatDate = (value: string) =>

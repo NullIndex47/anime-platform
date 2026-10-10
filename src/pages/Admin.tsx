@@ -10,7 +10,8 @@ import {
   LockKeyhole,
   ArrowUpRight,
 } from "lucide-react";
-import { catalogService } from "../services/catalog";
+import { adminCatalogService } from "../services/admin";
+import { isPublishedAnime } from "../services/catalog";
 import { commentService } from "../services/comments";
 import { DemoNotice } from "../components/DemoNotice";
 import NotFound from "./NotFound";
@@ -26,7 +27,7 @@ export default function Admin() {
   const { section = "" } = useParams();
   const current = sections.find((item) => item.id === section);
   if (!current) return <NotFound />;
-  const animes = catalogService.list();
+  const animes = adminCatalogService.list();
   const episodes = animes.flatMap((anime) =>
     anime.episodes.map((episode) => ({ anime, episode })),
   );
@@ -140,11 +141,21 @@ export default function Admin() {
                   {animes.map((anime) => (
                     <tr key={anime.id}>
                       <td>
-                        <Link className="admin-anime" to={`/anime/${anime.id}`}>
-                          <img src={anime.artwork} alt="" />
-                          {anime.title}
-                          <ArrowUpRight size={13} />
-                        </Link>
+                        {isPublishedAnime(anime) ? (
+                          <Link
+                            className="admin-anime"
+                            to={`/anime/${anime.id}`}
+                          >
+                            <img src={anime.artwork} alt="" />
+                            {anime.title}
+                            <ArrowUpRight size={13} />
+                          </Link>
+                        ) : (
+                          <span className="admin-anime">
+                            <img src={anime.artwork} alt="" />
+                            {anime.title}
+                          </span>
+                        )}
                       </td>
                       <td>
                         <span className="table-status">{anime.status}</span>
