@@ -18,29 +18,13 @@ export async function processCallback(client: SupabaseClient, url: URL) {
   if (query.has('error') || hash.has('error')) {
     throw new Error(query.get('error_description') || hash.get('error_description') || 'El enlace de autenticación no es válido.');
   }
-  const type = query.get('type') || hash.get('type');
-  let recovery = type === 'recovery';
   const code = query.get('code');
-  const tokenHash = query.get('token_hash');
-  if (code) {
-    // Supabase emits PASSWORD_RECOVERY for PKCE recovery links.
-    const { data: listener } = client.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') recovery = true;
-    });
-    try {
-      const { error } = await client.auth.exchangeCodeForSession(code, query.has('sb_flow_id') ? { flowId: query.get('sb_flow_id')! } : undefined);
-      if (error) throw error;
-    } finally { listener.subscription.unsubscribe(); }
-  } else if (tokenHash && (type === 'email' || type === 'signup' || type === 'recovery')) {
-    const { error } = await client.auth.verifyOtp({ token_hash: tokenHash, type });
-    if (error) throw error;
-  } else if (hash.get('access_token') && hash.get('refresh_token')) {
-    const { error } = await client.auth.setSession({
-      access_token: hash.get('access_token')!, refresh_token: hash.get('refresh_token')!,
-    });
-    if (error) throw error;
-  } else {
-    throw new Error('Falta el código de autenticación. Solicita un enlace nuevo.');
+  if (!code || query.has('token_hash') || hash.has('access_token') || query.get('type') === 'recovery') {
+    throw new Error('Este enlace no permite acceder. Vuelve a iniciar sesión con Google.');
   }
-  return recovery ? '/actualizar-contrasena' : '/cuenta';
+  const { error } = await client.auth.exchangeCodeForSession(
+    code, query.has('sb_flow_id') ? { flowId: query.get('sb_flow_id')! } : undefined,
+  );
+  if (error) throw error;
+  return '/cuenta';
 }

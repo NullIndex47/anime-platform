@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Navigate } from 'react-router';
+import { Navigate } from 'react-router';
 import { authError } from '../auth/callback';
 import { requireClient, setAuthError, useAuth } from '../auth/session';
 export default function Account() {
@@ -22,7 +22,6 @@ export default function Account() {
     <section className="panel account-panel">
       <p>Sesión iniciada como <strong>{session.user.email}</strong></p>
       <p>Correo: {session.user.email_confirmed_at ? 'confirmado' : 'pendiente de confirmación'}</p>
-      <Link className="text-link" to="/recuperar-contrasena">Recuperar contraseña por correo</Link>
       {(error || sessionError) && <p role="alert">{error || sessionError}</p>}
       <button className="button" disabled={busy} onClick={signOut}>{busy ? 'Cerrando sesión…' : 'Cerrar sesión'}</button>
     </section>

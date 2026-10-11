@@ -128,7 +128,7 @@ export function Layout() {
           <div className="footer-links">
             <Link to="/catalogo">Explorar</Link>
             <Link to="/admin">Panel demo</Link>
-            <Link to={session ? "/cuenta" : "/registro"}>{session ? "Mi cuenta" : "Crear cuenta"}</Link>
+            <Link to={session ? "/cuenta" : "/iniciar-sesion"}>{session ? "Mi cuenta" : "Acceder con Google"}</Link>
           </div>
           <div className="footer-note">
             <Moon size={18} />
