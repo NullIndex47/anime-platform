@@ -1,10 +1,14 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "anime-platform",
+  "main": "worker/index.ts",
+  "vars": { "ANILIST_ENABLED": "false" },
   "compatibility_date": "2026-10-10",
   "previews": {},
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],
     "not_found_handling": "single-page-application",
   },
 }

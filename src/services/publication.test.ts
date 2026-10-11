@@ -8,7 +8,7 @@ import { catalogService, defaultFilters, filterAnime } from "./catalog";
 import { adminCatalogService } from "./admin";
 import AnimeDetail from "../pages/AnimeDetail";
 import Episode from "../pages/Episode";
-import Admin from "../pages/Admin";
+import Admin from "../pages/AdminDemo";
 
 const renderRoute = (path: string) =>
   renderToStaticMarkup(

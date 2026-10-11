@@ -2,8 +2,8 @@ import { createClient, type Session } from '@supabase/supabase-js';
 import { useSyncExternalStore } from 'react';
 import { authError, processCallback } from './callback';
 
-const url = import.meta.env.VITE_SUPABASE_URL?.trim();
-const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
+const url = import.meta.env?.VITE_SUPABASE_URL?.trim();
+const key = import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
 // Only publishable keys are accepted. Never place server credentials in VITE_*.
 function createSupabaseClient() {
   if (!url || !key?.startsWith('sb_publishable_')) return null;

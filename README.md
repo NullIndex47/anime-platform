@@ -1,3 +1,9 @@
+# FASE 3A · administración segura y catálogo de borradores
+
+Consulta [la guía de FASE 3A](docs/phase-3a-catalog.md) para el SQL incremental, la concesión manual de administrador, los bindings de Worker, la revisión de AniList y las pruebas. `/admin` está protegido; la maqueta pública se conserva por separado en `/demo/admin`. AniList queda desactivado hasta resolver su autorización. El catálogo público y el reproductor siguen siendo demo claramente identificada; no se publican importaciones ni se inventan episodios.
+
+Las secciones siguientes documentan las fases anteriores y su estado histórico. La guía 3A describe el comportamiento actual de administración y la integración preparada.
+
 # YORU · anime-platform
 
 FASE 2A de una plataforma de anime original. React + Vite + TypeScript, Tailwind CSS 4 y React Router 7. Interfaz en español, tema oscuro con acentos ámbar y paisajes SVG creados para este proyecto.
