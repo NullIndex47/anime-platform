@@ -17,6 +17,9 @@ test('Only the authorized production, development and exact Preview callback ori
   assert.equal(callbackUrl('https://anime-platform.cuentagaming1304.workers.dev'), 'https://anime-platform.cuentagaming1304.workers.dev/auth/callback');
   const preview = 'https://feat-yoru-phase-2a-supabase-auth-anime-platform.cuentagaming1304.workers.dev';
   assert.equal(callbackUrl(preview), `${preview}/auth/callback`);
+  const profilesPreview = 'https://feat-yoru-phase-2b-profiles-anime-platform.cuentagaming1304.workers.dev';
+  assert.equal(callbackUrl(profilesPreview), `${profilesPreview}/auth/callback`);
+  for (const origin of [`${profilesPreview}.evil.example`, profilesPreview.replace('https:', 'http:'), profilesPreview.replace('feat-yoru-phase-2b-profiles', 'other-preview'), `${profilesPreview}:444`, `${profilesPreview}@evil.example`]) assert.throws(() => callbackUrl(origin));
   for (const origin of ['https://evil.example', 'https://anime-platform.cuentagaming1304.workers.dev.evil.example', 'http://localhost:8787', `${preview}.evil.example`, preview.replace('https:', 'http:'), preview.replace('feat-yoru-phase-2a-supabase-auth', 'other-preview'), `${preview}:444`, `${preview}@evil.example`]) assert.throws(() => callbackUrl(origin));
 });
 test('Google PKCE exchanges once, preserves flow id and ignores redirect parameters', async () => {

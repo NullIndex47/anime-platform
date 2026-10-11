@@ -4,6 +4,7 @@ const user = { id: '00000000-0000-0000-0000-000000000001', aud: 'authenticated',
 const token = `${btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))}.${btoa(JSON.stringify({ sub: user.id, exp: Math.floor(Date.now() / 1000) + 3600 }))}.test`;
 const session = { access_token: token, refresh_token: 'test-refresh', token_type: 'bearer', expires_in: 3600, user };
 test.beforeEach(async ({ page }) => {
+  await page.route(`${endpoint}/rest/v1/profiles**`, route => route.fulfill({ json: [{ id: user.id, username: 'Test_User' }] }));
   await page.route(`${endpoint}/auth/v1/**`, async route => {
     const url = route.request().url();
     await route.fulfill({ json: url.includes('/token') ? session : url.includes('/user') ? user : {} });
@@ -25,7 +26,7 @@ test('First Google access creates a session, exchanges once and persists after r
   });
   await googleLogin(page);
   expect(exchanges).toBe(1);
-  await expect(page.getByText(user.email, { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '@Test_User' })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('button', { name: 'Cerrar sesión' })).toBeVisible();
   expect(exchanges).toBe(1);
@@ -63,15 +64,19 @@ test('Failed remote signout clears local session and preserves the error', async
   await expect(page.getByRole('alert')).toContainText('Logout failed');
   await expect(page).toHaveURL(/\/iniciar-sesion$/);
 });
-test('Exact Preview origin starts Google and completes its PKCE callback', async ({ page }) => {
-  const preview = 'https://feat-yoru-phase-2a-supabase-auth-anime-platform.cuentagaming1304.workers.dev';
+for (const preview of [
+  'https://feat-yoru-phase-2a-supabase-auth-anime-platform.cuentagaming1304.workers.dev',
+  'https://feat-yoru-phase-2b-profiles-anime-platform.cuentagaming1304.workers.dev',
+]) {
+test(`Exact Preview ${preview} starts Google and completes its PKCE callback`, async ({ page }) => {
   await page.route(`${preview}/**`, async route => {
     const local = new URL(route.request().url()); local.protocol = 'http:'; local.host = 'localhost:5173';
     await route.fulfill({ response: await route.fetch({ url: local.href }) });
   });
   await googleLogin(page, preview);
-  await expect(page.getByText(user.email, { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '@Test_User' })).toBeVisible();
 });
+}
 test('Existing email-provider session is retained without offering password actions', async ({ page }) => {
   await page.goto('/iniciar-sesion');
   await page.evaluate(value => localStorage.setItem('sb-yoru-auth-test-auth-token', JSON.stringify(value)), {
@@ -79,8 +84,8 @@ test('Existing email-provider session is retained without offering password acti
     user: { ...user, app_metadata: { provider: 'email', providers: ['email'] } },
   });
   await page.goto('/cuenta');
-  await expect(page.getByRole('heading', { name: 'Mi cuenta.' })).toBeVisible();
-  await expect(page.getByText(user.email, { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Mi perfil.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '@Test_User' })).toBeVisible();
   await expect(page.locator('a[href="/recuperar-contrasena"]')).toHaveCount(0);
 });
 test('Access screen has a focused header, three benefits and an accessible Google CTA', async ({ page }, testInfo) => {

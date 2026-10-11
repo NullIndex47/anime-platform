@@ -194,6 +194,7 @@ Autoriza exactamente en Authentication → URL Configuration → Redirect URLs:
 - `https://anime-platform.cuentagaming1304.workers.dev/auth/callback`
 - `http://localhost:5173/auth/callback`
 - `https://feat-yoru-phase-2a-supabase-auth-anime-platform.cuentagaming1304.workers.dev/auth/callback`
+- `https://feat-yoru-phase-2b-profiles-anime-platform.cuentagaming1304.workers.dev/auth/callback`
 
 El cliente mantiene una lista exacta de esos orígenes, sin comodines. `/iniciar-sesion` ofrece solo «Continuar con Google». `/registro`, `/recuperar-contrasena` y `/actualizar-contrasena` redirigen al acceso para conservar enlaces antiguos sin ofrecer formularios retirados. `/cuenta` muestra el correo, estado de confirmación y cierre de sesión.
 
@@ -212,3 +213,9 @@ Para comprobar manualmente el proyecto real: acceder por primera vez con Google,
 `npm run build` comprueba TypeScript y genera dist. Para probar Authentication con Wrangler local: `npm run build && npx wrangler dev --local --port 5173` (detén Vite antes). El puerto 8787 habitual sirve la web pero no está autorizado para iniciar OAuth. No se fusiona la PR ni se despliega manualmente como parte de esta entrega.
 
 La pantalla de acceso conserva el paisaje original y refuerza el panel derecho con título, subtítulo, tres beneficios y un CTA ámbar con icono Google. Solo en `/iniciar-sesion` el header muestra el logo y «Explorar YORU», y el footer se reduce a una línea. La nota del botón explica el alta automática. Las pruebas verifican navegación por teclado, descripción accesible, ausencia de desbordamiento a 320/390/768/1440 px y recuperación de la navegación habitual al salir del acceso.
+
+## FASE 2B: perfiles
+
+La [moderación de nombres](docs/username-moderation.md) se añade con una segunda migración incremental. La primera migración de perfiles aplicada no se modifica ni se repite. Antes de imponer las nuevas reglas, ejecuta la revisión de solo lectura de nombres existentes indicada en esa guía.
+
+Consulta [la guía de perfiles](docs/phase-2b-profiles.md) para aplicar la migración SQL de forma controlada, tratar usuarios existentes y verificar RLS y persistencia real. Esta PR no añade migraciones ni despliegues automáticos.

@@ -12,9 +12,11 @@
     "preview": "vite preview --host 0.0.0.0",
     "dev:worker": "npm run build && wrangler dev",
     "deploy": "npm run build && wrangler deploy",
-    "test": "node --import tsx --test --test-isolation=none src/services/*.test.ts",
+    "test": "npm run moderation:check && node --import tsx --test --test-isolation=none src/services/*.test.ts",
     "test:e2e": "playwright test",
-    "test:e2e:worker": "E2E_SERVER=worker playwright test"
+    "test:e2e:worker": "E2E_SERVER=worker playwright test",
+    "moderation:generate": "node --import tsx scripts/generate-username-moderation.ts",
+    "moderation:check": "node --import tsx scripts/generate-username-moderation.ts --check"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",
@@ -24,6 +26,7 @@
     "react-router": "^7.9.4"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@playwright/test": "^1.64.0",
     "@tailwindcss/vite": "^4.1.14",
     "@types/node": "^24.0.0",
