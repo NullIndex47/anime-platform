@@ -1,3 +1,4 @@
+import { useAuth } from "../auth/session";
 import { useEffect, useState, type FormEvent } from "react";
 import {
   Link, NavLink, Outlet, matchPath, useLocation, useNavigate,
@@ -13,10 +14,12 @@ export function Logo() {
   );
 }
 export function Layout() {
+  const { session, loading } = useAuth();
   const [menu, setMenu] = useState(false);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
+  const authPage = location.pathname === "/iniciar-sesion" || location.pathname === "/iniciar-sesion/";
   useEffect(() => {
     setMenu(false);
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -45,11 +48,12 @@ export function Layout() {
       <a className="skip-link" href="#main">
         Saltar al contenido
       </a>
-      <header className="site-header">
+      <header className={`site-header${authPage ? " auth-header" : ""}`}>
         <div className="header-inner">
           <Link to="/" aria-label="Yoru, inicio">
             <Logo />
           </Link>
+          {authPage ? <Link className="auth-back-link" to="/catalogo">Explorar YORU <ArrowUpRight size={15} aria-hidden="true" /></Link> : <>
           <nav className="desktop-nav" aria-label="Navegación principal">
             <NavLink to="/" end>
               Inicio
@@ -71,8 +75,8 @@ export function Layout() {
               <ArrowRight size={15} />
             </button>
           </form>
-          <Link className="login-link" to="/iniciar-sesion">
-            Iniciar sesión <ArrowUpRight size={15} />
+          <Link className="login-link" to={session ? "/cuenta" : "/iniciar-sesion"}>
+            {loading ? "Comprobando sesión…" : session ? "Mi cuenta" : "Iniciar sesión"} <ArrowUpRight size={15} />
           </Link>
           <button
             className="mobile-menu icon-button"
@@ -83,8 +87,9 @@ export function Layout() {
           >
             {menu ? <X /> : <Menu />}
           </button>
+          </>}
         </div>
-        {menu && (
+        {!authPage && menu && (
           <nav
             id="mobile-navigation"
             className="mobile-nav"
@@ -97,7 +102,7 @@ export function Layout() {
             <NavLink to="/catalogo?status=En%20emisi%C3%B3n">
               En emisión
             </NavLink>
-            <NavLink to="/iniciar-sesion">Iniciar sesión</NavLink>
+            <NavLink to={session ? "/cuenta" : "/iniciar-sesion"}>{loading ? "Comprobando sesión…" : session ? "Mi cuenta" : "Iniciar sesión"}</NavLink>
             <form onSubmit={submit}>
               <input
                 aria-label="Buscar anime desde el menú"
@@ -115,7 +120,7 @@ export function Layout() {
       <main id="main" tabIndex={-1}>
         <Outlet />
       </main>
-      <footer className="site-footer">
+      {authPage ? <footer className="auth-footer"><div className="container">© 2026 Yoru · Historias que se quedan contigo.</div></footer> : <footer className="site-footer">
         <div className="container footer-top">
           <div>
             <Link to="/" aria-label="Yoru, inicio">
@@ -126,7 +131,7 @@ export function Layout() {
           <div className="footer-links">
             <Link to="/catalogo">Explorar</Link>
             <Link to="/admin">Panel demo</Link>
-            <Link to="/registro">Crear cuenta</Link>
+            <Link to={session ? "/cuenta" : "/iniciar-sesion"}>{session ? "Mi cuenta" : "Acceder con Google"}</Link>
           </div>
           <div className="footer-note">
             <Moon size={18} />
@@ -140,10 +145,10 @@ export function Layout() {
         <div className="container footer-bottom">
           <span>© 2026 Yoru · Un universo por descubrir</span>
           <span className="demo-tag">
-            FASE 01 <span /> Todos los contenidos son ficticios
+            FASE 2A <span /> Todos los contenidos son ficticios
           </span>
         </div>
-      </footer>
+      </footer>}
     </>
   );
 }

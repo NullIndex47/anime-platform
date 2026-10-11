@@ -1,6 +1,6 @@
 # YORU · anime-platform
 
-Primera fase de una plataforma de anime original. React + Vite + TypeScript, Tailwind CSS 4 y React Router 7. Interfaz en español, tema oscuro con acentos ámbar y paisajes SVG creados para este proyecto.
+FASE 2A de una plataforma de anime original. React + Vite + TypeScript, Tailwind CSS 4 y React Router 7. Interfaz en español, tema oscuro con acentos ámbar y paisajes SVG creados para este proyecto.
 
 ## Ejecutar
 
@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Abre la dirección que muestre Vite (normalmente `http://localhost:5173`). No hacen falta cuentas, claves ni variables de entorno. `npm ci` utiliza el `package-lock.json` incluido.
+Abre la dirección que muestre Vite (normalmente `http://localhost:5173`). El catálogo demo funciona sin configuración. Para activar el acceso, copia `.env.example` a `.env.local` y configura la URL y la clave pública Supabase. `npm ci` utiliza el `package-lock.json` incluido.
 
 ```bash
 npm run test     # Pruebas de catálogo, publicación y rutas
@@ -25,7 +25,7 @@ npm run preview  # Servir el resultado de producción, normalmente en el puerto 
 - **Catálogo:** búsqueda que ignora acentos y mayúsculas; filtros combinables de género, año, estado y formato; orden por valoración, año o título; estado sin resultados y reinicio de filtros. Los filtros están en la URL para compartir búsquedas.
 - **Ficha:** ilustración original, sinopsis, géneros, información del estudio ficticio, estado, valoración demo y episodios con orden ascendente/descendente. Solo se muestran fichas con al menos un episodio disponible; las fichas sin publicar muestran el estado 404.
 - **Episodio:** vídeo HTML5 con controles nativos, clip original local, servidores preparados y navegación entre episodios y ficha. El primer/último episodio desactiva la navegación que no corresponde.
-- **Acceso/registro:** formularios de vista previa, campos etiquetados, control de visibilidad de contraseña y botones de envío deshabilitados.
+- **Acceso/registro:** Acceso y alta automática exclusivamente con Google OAuth mediante Supabase, sesión persistente, cierre de sesión y cuenta básica.
 - **Administración:** resumen y secciones de animes, episodios, comentarios, usuarios y ajustes. Las tablas conservan también los títulos sin publicar y solo enlazan a fichas públicas disponibles; crear, editar y moderar están deshabilitados.
 - **Comentarios:** secciones separadas en ficha y episodio, datos de ejemplo y control funcional para revelar u ocultar spoilers. La publicación está deshabilitada.
 - **Responsive:** escritorio, tablet y móvil, menú móvil, tablas desplazables, enfoque de teclado visible, enlace para saltar al contenido, textos alternativos y soporte de movimiento reducido.
@@ -41,7 +41,7 @@ npm run preview  # Servir el resultado de producción, normalmente en el puerto 
 | `/anime/el-viaje-de-aoi`                                   | Información, episodios y comentarios de ficha                   |
 | `/anime/el-viaje-de-aoi/episodio/1`                        | Reproduce el clip, avanza de episodio y revela un spoiler       |
 | `/anime/jardin-de-invierno`                                | Estado 404: anime todavía no publicado                          |
-| `/iniciar-sesion` y `/registro`                            | Formularios pendientes y mostrar/ocultar contraseña             |
+| `/iniciar-sesion` y `/registro`                            | Acceso con Google; /registro redirige al acceso             |
 | `/admin` y `/admin/animes`                                 | Resumen y estructura de gestión demo                            |
 | `/anime/no-existe` y `/anime/el-viaje-de-aoi/episodio/999` | Estado 404                                                      |
 
@@ -66,7 +66,7 @@ src/
 wrangler.jsonc         Configuración de Cloudflare Workers Static Assets
 ```
 
-Los servicios son el punto previsto para sustituir las fixtures por una integración futura. No existe cliente, SDK ni configuración activa de Supabase o AniList en esta fase.
+Los servicios son el punto previsto para sustituir las fixtures por una integración futura. Supabase Authentication usa `src/auth/`; catálogo y comentarios siguen siendo fixtures. AniList no está integrado.
 
 ## Regla de publicación
 
@@ -84,16 +84,16 @@ Para probarlo, busca «Jardín» en `/catalogo`: no habrá resultados. Abre su U
 
 Los ocho títulos, sus estudios, sinopsis, puntuaciones, fechas, episodios y comentarios son ficticios. Los paisajes SVG se han creado expresamente para esta interfaz. El vídeo de 12 segundos es una pieza gráfica original sin audio, servida desde `public/media/yoru-demo.webm`; todos los episodios reproducen el mismo clip. Las duraciones de las fichas pertenecen a los datos ficticios, no al clip de prueba.
 
-Solo **Yoru Demo** tiene una fuente disponible. Los servidores 02 y 03 muestran «Disponible en una fase posterior» y no se pueden seleccionar. No hay embeds, enlaces a vídeos comerciales, recursos remotos ni seguimiento de terceros. Los formularios no envían ni persisten credenciales y los comentarios no se publican.
+Solo **Yoru Demo** tiene una fuente disponible. Los servidores 02 y 03 muestran «Disponible en una fase posterior» y no se pueden seleccionar. No hay embeds, enlaces a vídeos comerciales, recursos remotos ni seguimiento de terceros. El acceso se realiza exclusivamente con Google mediante Supabase; la aplicación no solicita contraseñas. Los comentarios no se publican.
 
 ## Pendiente para fases posteriores
 
-- Integración de Supabase: autenticación, base de datos, almacenamiento y permisos/RLS.
+- Supabase: base de datos, almacenamiento y permisos/RLS. La autenticación está implementada.
 - Roles y protección real de administración. **El panel actual es una maqueta pública de solo lectura, no un panel protegido.**
 - Creación, edición y eliminación de contenido; gestión de fuentes con derechos o autorización.
 - Publicación y moderación persistente de comentarios, favoritos y cuentas de usuario.
 - Integración opcional de AniList, validación de entradas de backend y paginación de catálogos grandes.
-- Recuperación de contraseña, verificación de correo y políticas del servicio.
+- Políticas del servicio y perfiles persistentes con nombres de usuario únicos.
 - Despliegue real y configuración de dominio.
 
 ## Cloudflare Workers Static Assets
@@ -149,9 +149,9 @@ Para conectar el repositorio mediante **Workers Builds**, selecciona la carpeta 
 
 Vite copia `public/.assetsignore` a `dist/.assetsignore`. Ese archivo excluye `_redirects` del despliegue de Workers: la regla heredada de Pages se conserva como comentario en el proyecto para evitar que el servidor local de Wrangler la interprete, y el fallback SPA del Worker lo controla `assets.not_found_handling`. El estado local de Wrangler queda excluido por `.gitignore`.
 
-No se ha desplegado el Worker ni se ha modificado la cuenta de Cloudflare.
+Esta integración no modifica la cuenta de Cloudflare ni publica automáticamente el Worker.
 
-## Verificación de esta entrega
+## Verificación histórica de FASE 01
 
 - `npm run build`: correcto (comprobación TypeScript y generación de `dist/`).
 - Wrangler 4.149.0: `wrangler deploy --dry-run` correcto, sin publicar.
@@ -182,3 +182,33 @@ Para contrastar una versión pública, usa su URL completa, por ejemplo:
 `E2E_BASE_URL=https://anime-platform.<subdominio>.workers.dev npm run test:e2e`.
 Este modo no inicia un servidor ni despliega. Los errores conservan una traza
 Playwright en `test-results/` que puede abrirse con `npx playwright show-trace`.
+
+## FASE 2A · Acceso exclusivo con Google
+
+Configura `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` (`sb_publishable_…`) en `.env.local`, excluido de Git. `.env.example` contiene solo marcadores. En Workers Builds, las variables deben estar disponibles durante `npm run build`: añadir bindings después de compilar no configura el bundle público. Nunca uses service_role, sb_secret, secretos Google ni contraseñas de base de datos en VITE_*.
+
+En Supabase mantén Google habilitado y el registro de nuevos usuarios permitido: `signInWithOAuth({ provider: 'google' })` sirve tanto para acceder como para crear automáticamente una cuenta en la primera visita. La aplicación no llama a signUp ni solicita contraseñas. **No desactivar todavía Email**: primero verificar la cuenta de prueba existente y el acceso con Google. Las sesiones ya existentes, incluidas las de Email, se conservan; retirar los formularios no migra ni elimina cuentas. La asociación de identidades pertenece a Supabase; no se enlazan cuentas manualmente en el frontend.
+
+Autoriza exactamente en Authentication → URL Configuration → Redirect URLs:
+
+- `https://anime-platform.cuentagaming1304.workers.dev/auth/callback`
+- `http://localhost:5173/auth/callback`
+- `https://feat-yoru-phase-2a-supabase-auth-anime-platform.cuentagaming1304.workers.dev/auth/callback`
+
+El cliente mantiene una lista exacta de esos orígenes, sin comodines. `/iniciar-sesion` ofrece solo «Continuar con Google». `/registro`, `/recuperar-contrasena` y `/actualizar-contrasena` redirigen al acceso para conservar enlaces antiguos sin ofrecer formularios retirados. `/cuenta` muestra el correo, estado de confirmación y cierre de sesión.
+
+El callback intercambia códigos PKCE, conserva sb_flow_id cuando existe, limpia códigos/tokens de la URL y solo vuelve a `/cuenta`, ignorando next y destinos arbitrarios. Los enlaces antiguos con token hash o fragmentos de tokens de correo/recuperación se rechazan con una invitación a acceder con Google. Las sesiones persistentes y su renovación las gestiona Supabase. Un cliente, una inicialización y una suscripción compartidos evitan duplicados en StrictMode. El cierre de sesión intenta revocar las sesiones globalmente; si falla, el SDK limpia la sesión local y la aplicación conserva el error para mostrarlo en el acceso.
+
+### Perfiles futuros
+
+`src/types/profile.ts` define el contrato de un perfil asociado al user ID de Supabase, con username y displayName independientes. Todavía no existen tablas, consultas de perfiles ni políticas RLS. En la fase siguiente, el username deberá normalizarse y reservarse mediante una restricción UNIQUE y una operación atómica en la base de datos; una comprobación de disponibilidad en el cliente no garantiza unicidad. El nombre proporcionado por Google y user_metadata no constituyen un username reservado ni un permiso. La futura tabla deberá autorizar lectura/escritura mediante RLS por auth.uid(); los roles administrativos nunca dependerán de metadatos editables ni localStorage. El panel demo permanece de solo lectura.
+
+### Verificación
+
+`npm test` cubre orígenes exactos, rechazo de otros dominios y enlaces retirados, callback PKCE, errores y destinos internos. `npm run test:e2e:worker` ejecuta acceso Google, primera sesión, intercambio único en StrictMode, persistencia, cierre de sesión y sus errores, rutas retiradas, sesiones Email existentes y Preview con el SDK real y respuestas Supabase simuladas, además de las regresiones del reproductor en escritorio/móvil. No acredita cuentas nuevas en el proyecto remoto ni la configuración de Google. Playwright usa valores ficticios solo en su servidor.
+
+Para comprobar manualmente el proyecto real: acceder por primera vez con Google, comprobar la cuenta creada en Supabase y `/cuenta`, recargar, repetir en dos pestañas, cerrar sesión y probar OAuth cancelado. Verificar la cuenta de prueba existente antes de considerar desactivar Email. Confirmar los retornos en producción y Preview. El proxy del entorno ha bloqueado anteriormente estas comprobaciones públicas con HTTP 403.
+
+`npm run build` comprueba TypeScript y genera dist. Para probar Authentication con Wrangler local: `npm run build && npx wrangler dev --local --port 5173` (detén Vite antes). El puerto 8787 habitual sirve la web pero no está autorizado para iniciar OAuth. No se fusiona la PR ni se despliega manualmente como parte de esta entrega.
+
+La pantalla de acceso conserva el paisaje original y refuerza el panel derecho con título, subtítulo, tres beneficios y un CTA ámbar con icono Google. Solo en `/iniciar-sesion` el header muestra el logo y «Explorar YORU», y el footer se reduce a una línea. La nota del botón explica el alta automática. Las pruebas verifican navegación por teclado, descripción accesible, ausencia de desbordamiento a 320/390/768/1440 px y recuperación de la navegación habitual al salir del acceso.
