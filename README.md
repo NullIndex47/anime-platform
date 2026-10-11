@@ -216,4 +216,6 @@ La pantalla de acceso conserva el paisaje original y refuerza el panel derecho c
 
 ## FASE 2B: perfiles
 
+La [moderación de nombres](docs/username-moderation.md) se añade con una segunda migración incremental. La primera migración de perfiles aplicada no se modifica ni se repite. Antes de imponer las nuevas reglas, ejecuta la revisión de solo lectura de nombres existentes indicada en esa guía.
+
 Consulta [la guía de perfiles](docs/phase-2b-profiles.md) para aplicar la migración SQL de forma controlada, tratar usuarios existentes y verificar RLS y persistencia real. Esta PR no añade migraciones ni despliegues automáticos.

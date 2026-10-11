@@ -153,3 +153,47 @@ test('Profile form remains accessible and responsive on mobile and desktop', asy
   await expect(page.getByRole('button', { name: 'Guardar nombre' })).toBeFocused();
   await page.screenshot({ path: `work/profile-${testInfo.project.name}.png`, fullPage: true });
 });
+
+test('Moderation is immediate for bilingual words and evasions; legitimate fragments can be saved', async ({ page }) => {
+  const server = await setup(page);
+  await existingSession(page);
+  await expect(page).toHaveURL(/\/bienvenida$/);
+  const input = page.getByLabel('Nombre de usuario público');
+  for (const name of ['p3nd3j0', 'f_u_c_k', 'fuuuckk', 'n1gg3r', 'p0rn', 'yoru_staff', 'ad_m1n', 'xxFuckxx', '0ff1c1a1']) {
+    await input.fill(name);
+    // No submit is needed to display feedback.
+    await expect(page.getByRole('alert')).toHaveText('Este nombre no cumple las normas de YORU. Elige otro nombre de usuario.');
+    await expect(input).toHaveAttribute('aria-invalid', 'true');
+    await page.getByRole('button', { name: 'Crear mi perfil' }).click();
+  }
+  expect(server.writes).toBe(0);
+  for (const name of ['Scunthorpe', 'Assassin', 'Canal_Arte', 'Computadora', 'Kike', 'Yoru_Fan']) {
+    await input.fill(name);
+    await expect(page.getByRole('alert')).toHaveCount(0);
+  }
+  await page.getByRole('button', { name: 'Crear mi perfil' }).click();
+  await expect(page.getByRole('heading', { name: '@Yoru_Fan' })).toBeVisible();
+  await page.getByLabel('Nombre de usuario público').fill('5h1t');
+  await expect(page.getByRole('alert')).toContainText('normas de YORU');
+  await page.getByRole('button', { name: 'Guardar nombre' }).click();
+  expect(server.writes).toBe(1);
+  await page.getByLabel('Nombre de usuario público').fill('Scunthorpe');
+  await page.getByRole('button', { name: 'Guardar nombre' }).click();
+  await expect(page.getByRole('heading', { name: '@Scunthorpe' })).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel('Nombre de usuario público')).toHaveValue('Scunthorpe');
+});
+
+test('Database moderation rejects a direct-rule discrepancy without exposing server details', async ({ page }) => {
+  const server = await setup(page, { id: user.id, username: 'Sakura_7' });
+  await existingSession(page);
+  server.failWrite = '23514';
+  await page.getByLabel('Nombre de usuario público').fill('New_Name');
+  await page.getByRole('button', { name: 'Guardar nombre' }).click();
+  await expect(page.getByRole('alert')).toContainText('normas de YORU');
+  await expect(page.getByRole('alert')).not.toContainText('private DB details');
+  await expect(page.getByRole('heading', { name: '@Sakura_7' })).toBeVisible();
+  server.failWrite = '';
+  await page.getByRole('button', { name: 'Guardar nombre' }).click();
+  await expect(page.getByRole('heading', { name: '@New_Name' })).toBeVisible();
+});

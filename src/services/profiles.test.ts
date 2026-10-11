@@ -46,5 +46,6 @@ test('Profiles use Supabase REST persistence, selected public fields and scoped 
   for (const request of requests) assert.equal(request.url.searchParams.get('select'), 'id,username');
   const count = requests.length;
   await assert.rejects(saveProfile(client, id, 'admin', false), /reservado/);
+  await assert.rejects(saveProfile(client, id, 'f_u_c_k', false), /normas de YORU/);
   assert.equal(requests.length, count);
 });

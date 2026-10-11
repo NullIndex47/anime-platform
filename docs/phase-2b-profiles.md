@@ -1,5 +1,7 @@
 # FASE 2B: perfiles reales en Supabase
 
+Si la primera migración ya está aplicada, no la repitas. Para añadir moderación utiliza la [guía de la segunda migración incremental](username-moderation.md), que incluye la revisión previa de nombres existentes y la aplicación controlada sin recrear profiles.
+
 ## Modelo y alcance
 
 Cada perfil contiene solo `id` (UUID de `auth.users`), `username` y una clave derivada `username_key`. No se copian el correo, el nombre, la foto, contraseñas, roles ni metadatos de Google. El avatar es un icono local predeterminado; no hay almacenamiento ni subida de archivos.

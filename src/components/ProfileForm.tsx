@@ -28,10 +28,10 @@ export function ProfileForm({ profile, onSaved }: { profile: UserProfile | null;
   return <form className="profile-form" onSubmit={submit} noValidate>
     <label htmlFor="username">Nombre de usuario público</label>
     <input id="username" name="username" value={username} autoComplete="username" autoCapitalize="none" spellCheck={false}
-      minLength={3} maxLength={20} aria-describedby="username-help" aria-invalid={!!error} disabled={busy}
-      onChange={event => { setUsername(event.target.value); setError(null); setSuccess(false); }} />
+      minLength={3} maxLength={20} aria-describedby={error ? 'username-help username-error' : 'username-help'} aria-invalid={!!error} disabled={busy}
+      onChange={event => { const value = event.target.value; setUsername(value); setError(value ? validateUsername(value) : null); setSuccess(false); }} />
     <p id="username-help">De 3 a 20 caracteres: letras A–Z, números y guiones bajos. Las mayúsculas no distinguen nombres. Es independiente de tu cuenta de Google.</p>
-    {error && <p className="auth-feedback" role="alert">{error}</p>}
+    {error && <p id="username-error" className="auth-feedback" role="alert">{error}</p>}
     {success && <p role="status">Nombre actualizado y guardado en Supabase.</p>}
     <button className="button" disabled={busy} aria-busy={busy}>{busy ? 'Guardando…' : profile ? 'Guardar nombre' : 'Crear mi perfil'}</button>
   </form>;
