@@ -1740,7 +1740,7 @@ select:hover {
   flex-direction: column;
   gap: 20px;
 }
-.auth-form > label {
+.auth-form fieldset > label {
   font-size: 10px;
   color: #c1c9b1;
   display: flex;
@@ -1777,7 +1777,7 @@ select:hover {
   color: #91988a;
   align-self: flex-end;
 }
-.auth-form > .button {
+.auth-form fieldset > .button {
   width: 100%;
   margin-top: 6px;
 }
@@ -3046,3 +3046,12 @@ td {
     scroll-behavior: auto !important;
   }
 }
+
+.auth-form fieldset {
+  border: 0; padding: 0; margin: 0; min-width: 0;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.auth-form fieldset > label { display: flex; flex-direction: column; gap: 9px; }
+.auth-form fieldset > .button { width: 100%; }
+.auth-feedback { overflow-wrap: anywhere; }
+.account-panel { padding: 28px; display: flex; flex-direction: column; gap: 20px; align-items: flex-start; }

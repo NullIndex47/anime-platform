@@ -1,3 +1,4 @@
+import { useAuth } from "../auth/session";
 import { useEffect, useState, type FormEvent } from "react";
 import {
   Link, NavLink, Outlet, matchPath, useLocation, useNavigate,
@@ -13,6 +14,7 @@ export function Logo() {
   );
 }
 export function Layout() {
+  const { session, loading } = useAuth();
   const [menu, setMenu] = useState(false);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
@@ -71,8 +73,8 @@ export function Layout() {
               <ArrowRight size={15} />
             </button>
           </form>
-          <Link className="login-link" to="/iniciar-sesion">
-            Iniciar sesión <ArrowUpRight size={15} />
+          <Link className="login-link" to={session ? "/cuenta" : "/iniciar-sesion"}>
+            {loading ? "Comprobando sesión…" : session ? "Mi cuenta" : "Iniciar sesión"} <ArrowUpRight size={15} />
           </Link>
           <button
             className="mobile-menu icon-button"
@@ -97,7 +99,7 @@ export function Layout() {
             <NavLink to="/catalogo?status=En%20emisi%C3%B3n">
               En emisión
             </NavLink>
-            <NavLink to="/iniciar-sesion">Iniciar sesión</NavLink>
+            <NavLink to={session ? "/cuenta" : "/iniciar-sesion"}>{loading ? "Comprobando sesión…" : session ? "Mi cuenta" : "Iniciar sesión"}</NavLink>
             <form onSubmit={submit}>
               <input
                 aria-label="Buscar anime desde el menú"
@@ -126,7 +128,7 @@ export function Layout() {
           <div className="footer-links">
             <Link to="/catalogo">Explorar</Link>
             <Link to="/admin">Panel demo</Link>
-            <Link to="/registro">Crear cuenta</Link>
+            <Link to={session ? "/cuenta" : "/registro"}>{session ? "Mi cuenta" : "Crear cuenta"}</Link>
           </div>
           <div className="footer-note">
             <Moon size={18} />
@@ -140,7 +142,7 @@ export function Layout() {
         <div className="container footer-bottom">
           <span>© 2026 Yoru · Un universo por descubrir</span>
           <span className="demo-tag">
-            FASE 01 <span /> Todos los contenidos son ficticios
+            FASE 2A <span /> Todos los contenidos son ficticios
           </span>
         </div>
       </footer>

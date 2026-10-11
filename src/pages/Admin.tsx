@@ -43,8 +43,8 @@ export default function Admin() {
       </div>
       <DemoNotice>
         Panel público de demostración y solo lectura. Antes de habilitar
-        acciones reales harán falta autenticación, roles y permisos de
-        administración.
+        acciones reales hará falta autorización segura con roles y RLS.
+        Tener una sesión de usuario no concede permisos de administración.
       </DemoNotice>
       <div className="admin-layout">
         <nav
@@ -236,7 +236,7 @@ export default function Admin() {
               </h3>
               <p>
                 {section === "usuarios"
-                  ? "La gestión de usuarios y roles estará disponible al integrar la autenticación."
+                  ? "La gestión de usuarios y roles requiere autorización segura con RLS."
                   : "La configuración del sitio y de sus servicios se incorporará en una próxima fase."}
               </p>
               <span className="demo-tag">MÓDULO PREPARADO · SIN BACKEND</span>

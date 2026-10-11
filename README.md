@@ -1,6 +1,6 @@
 # YORU · anime-platform
 
-Primera fase de una plataforma de anime original. React + Vite + TypeScript, Tailwind CSS 4 y React Router 7. Interfaz en español, tema oscuro con acentos ámbar y paisajes SVG creados para este proyecto.
+FASE 2A de una plataforma de anime original. React + Vite + TypeScript, Tailwind CSS 4 y React Router 7. Interfaz en español, tema oscuro con acentos ámbar y paisajes SVG creados para este proyecto.
 
 ## Ejecutar
 
@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Abre la dirección que muestre Vite (normalmente `http://localhost:5173`). No hacen falta cuentas, claves ni variables de entorno. `npm ci` utiliza el `package-lock.json` incluido.
+Abre la dirección que muestre Vite (normalmente `http://localhost:5173`). El catálogo demo funciona sin configuración. Para activar el acceso, copia `.env.example` a `.env.local` y configura la URL y la clave pública Supabase. `npm ci` utiliza el `package-lock.json` incluido.
 
 ```bash
 npm run test     # Pruebas de catálogo, publicación y rutas
@@ -25,7 +25,7 @@ npm run preview  # Servir el resultado de producción, normalmente en el puerto 
 - **Catálogo:** búsqueda que ignora acentos y mayúsculas; filtros combinables de género, año, estado y formato; orden por valoración, año o título; estado sin resultados y reinicio de filtros. Los filtros están en la URL para compartir búsquedas.
 - **Ficha:** ilustración original, sinopsis, géneros, información del estudio ficticio, estado, valoración demo y episodios con orden ascendente/descendente. Solo se muestran fichas con al menos un episodio disponible; las fichas sin publicar muestran el estado 404.
 - **Episodio:** vídeo HTML5 con controles nativos, clip original local, servidores preparados y navegación entre episodios y ficha. El primer/último episodio desactiva la navegación que no corresponde.
-- **Acceso/registro:** formularios de vista previa, campos etiquetados, control de visibilidad de contraseña y botones de envío deshabilitados.
+- **Acceso/registro:** Google OAuth y correo/contraseña con Supabase, confirmación de correo, recuperación y actualización de contraseña, sesión persistente, cierre de sesión y cuenta básica.
 - **Administración:** resumen y secciones de animes, episodios, comentarios, usuarios y ajustes. Las tablas conservan también los títulos sin publicar y solo enlazan a fichas públicas disponibles; crear, editar y moderar están deshabilitados.
 - **Comentarios:** secciones separadas en ficha y episodio, datos de ejemplo y control funcional para revelar u ocultar spoilers. La publicación está deshabilitada.
 - **Responsive:** escritorio, tablet y móvil, menú móvil, tablas desplazables, enfoque de teclado visible, enlace para saltar al contenido, textos alternativos y soporte de movimiento reducido.
@@ -41,7 +41,7 @@ npm run preview  # Servir el resultado de producción, normalmente en el puerto 
 | `/anime/el-viaje-de-aoi`                                   | Información, episodios y comentarios de ficha                   |
 | `/anime/el-viaje-de-aoi/episodio/1`                        | Reproduce el clip, avanza de episodio y revela un spoiler       |
 | `/anime/jardin-de-invierno`                                | Estado 404: anime todavía no publicado                          |
-| `/iniciar-sesion` y `/registro`                            | Formularios pendientes y mostrar/ocultar contraseña             |
+| `/iniciar-sesion` y `/registro`                            | Acceso real y mostrar/ocultar contraseña             |
 | `/admin` y `/admin/animes`                                 | Resumen y estructura de gestión demo                            |
 | `/anime/no-existe` y `/anime/el-viaje-de-aoi/episodio/999` | Estado 404                                                      |
 
@@ -66,7 +66,7 @@ src/
 wrangler.jsonc         Configuración de Cloudflare Workers Static Assets
 ```
 
-Los servicios son el punto previsto para sustituir las fixtures por una integración futura. No existe cliente, SDK ni configuración activa de Supabase o AniList en esta fase.
+Los servicios son el punto previsto para sustituir las fixtures por una integración futura. Supabase Authentication usa `src/auth/`; catálogo y comentarios siguen siendo fixtures. AniList no está integrado.
 
 ## Regla de publicación
 
@@ -84,16 +84,16 @@ Para probarlo, busca «Jardín» en `/catalogo`: no habrá resultados. Abre su U
 
 Los ocho títulos, sus estudios, sinopsis, puntuaciones, fechas, episodios y comentarios son ficticios. Los paisajes SVG se han creado expresamente para esta interfaz. El vídeo de 12 segundos es una pieza gráfica original sin audio, servida desde `public/media/yoru-demo.webm`; todos los episodios reproducen el mismo clip. Las duraciones de las fichas pertenecen a los datos ficticios, no al clip de prueba.
 
-Solo **Yoru Demo** tiene una fuente disponible. Los servidores 02 y 03 muestran «Disponible en una fase posterior» y no se pueden seleccionar. No hay embeds, enlaces a vídeos comerciales, recursos remotos ni seguimiento de terceros. Los formularios no envían ni persisten credenciales y los comentarios no se publican.
+Solo **Yoru Demo** tiene una fuente disponible. Los servidores 02 y 03 muestran «Disponible en una fase posterior» y no se pueden seleccionar. No hay embeds, enlaces a vídeos comerciales, recursos remotos ni seguimiento de terceros. Los formularios de autenticación envían las credenciales exclusivamente al SDK de Supabase; las contraseñas no se guardan manualmente. Los comentarios no se publican.
 
 ## Pendiente para fases posteriores
 
-- Integración de Supabase: autenticación, base de datos, almacenamiento y permisos/RLS.
+- Supabase: base de datos, almacenamiento y permisos/RLS. La autenticación está implementada.
 - Roles y protección real de administración. **El panel actual es una maqueta pública de solo lectura, no un panel protegido.**
 - Creación, edición y eliminación de contenido; gestión de fuentes con derechos o autorización.
 - Publicación y moderación persistente de comentarios, favoritos y cuentas de usuario.
 - Integración opcional de AniList, validación de entradas de backend y paginación de catálogos grandes.
-- Recuperación de contraseña, verificación de correo y políticas del servicio.
+- Políticas del servicio. Recuperación y confirmación de correo están implementadas.
 - Despliegue real y configuración de dominio.
 
 ## Cloudflare Workers Static Assets
@@ -149,9 +149,9 @@ Para conectar el repositorio mediante **Workers Builds**, selecciona la carpeta 
 
 Vite copia `public/.assetsignore` a `dist/.assetsignore`. Ese archivo excluye `_redirects` del despliegue de Workers: la regla heredada de Pages se conserva como comentario en el proyecto para evitar que el servidor local de Wrangler la interprete, y el fallback SPA del Worker lo controla `assets.not_found_handling`. El estado local de Wrangler queda excluido por `.gitignore`.
 
-No se ha desplegado el Worker ni se ha modificado la cuenta de Cloudflare.
+Esta integración no modifica la cuenta de Cloudflare ni publica automáticamente el Worker.
 
-## Verificación de esta entrega
+## Verificación histórica de FASE 01
 
 - `npm run build`: correcto (comprobación TypeScript y generación de `dist/`).
 - Wrangler 4.149.0: `wrangler deploy --dry-run` correcto, sin publicar.
@@ -182,3 +182,56 @@ Para contrastar una versión pública, usa su URL completa, por ejemplo:
 `E2E_BASE_URL=https://anime-platform.<subdominio>.workers.dev npm run test:e2e`.
 Este modo no inicia un servidor ni despliega. Los errores conservan una traza
 Playwright en `test-results/` que puede abrirse con `npx playwright show-trace`.
+
+## FASE 2A · Supabase Authentication
+
+### Configuración
+
+1. Copia `.env.example` a `.env.local` (excluido de Git).
+2. Define `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` con la URL del proyecto y su clave **publishable** (`sb_publishable_…`). No se aceptan claves legacy JWT para evitar confundir una clave pública con `service_role`.
+3. Reinicia Vite. Para producción, define estas variables en el entorno de **compilación de Workers Builds**, antes de `npm run build`, y recompila/despliega. Vite las incorpora al bundle público; agregarlas solo como bindings del Worker después de compilar no funciona.
+4. En Supabase, mantén Google habilitado, Email habilitado y **Confirm email activado**. Configura Site URL como `https://anime-platform.cuentagaming1304.workers.dev` y autoriza exactamente:
+   - `https://anime-platform.cuentagaming1304.workers.dev/auth/callback`
+   - `http://localhost:5173/auth/callback`
+
+No incluyas `service_role`, claves `sb_secret_…`, secretos Google OAuth ni contraseñas de base de datos en `VITE_*`. Los secretos del proveedor Google se configuran exclusivamente en Supabase. El cliente deshabilita los formularios y muestra un error si falta configuración.
+
+La aplicación usa un cliente único, una inicialización compartida y una suscripción de sesión independiente de React. StrictMode no intercambia el código dos veces. `onAuthStateChange` actualiza la navegación y responde a cambios entre pestañas; no ejecuta operaciones asíncronas dentro de la suscripción. Supabase gestiona persistencia y renovación de tokens. La contraseña solo se pasa al SDK y se limpia del formulario tras completar la operación.
+
+### Callback y correos
+
+`/auth/callback` admite códigos PKCE (conservando `sb_flow_id` cuando lo añade el SDK), fragmentos de sesión de enlaces estándar y `token_hash` con tipo `email`, `signup` o `recovery`. Retira códigos/tokens de la URL incluso si el enlace falla. Solo redirige a `/cuenta` o `/actualizar-contrasena`; ignora `next`, `redirect` y destinos proporcionados por el enlace. Los enlaces de recuperación PKCE se reconocen por el evento `PASSWORD_RECOVERY` del SDK.
+
+Con las plantillas estándar de Supabase (`{{ .ConfirmationURL }}`), un flujo PKCE debe completarse en el navegador y origen donde se solicitó: el verificador se guarda allí. Si quieres confirmar correos o recuperar acceso desde otro navegador, configura las plantillas para verificar directamente el token hash:
+
+- Confirmación: `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email`
+- Recuperación: `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery`
+
+No reemplaces estas variables por tokens reales ni compartas enlaces recibidos. El callback verifica el token con Supabase. Un enlace vencido, reutilizado o sin verificador muestra el error y permite pedir otro enlace.
+
+### Cuenta y permisos
+
+`/cuenta` requiere una sesión y muestra correo, confirmación y cierre de sesión. `/recuperar-contrasena` solicita el correo y `/actualizar-contrasena` permite establecer una contraseña con una sesión válida. Supabase decide si requiere reautenticación según su política. El cierre de sesión predeterminado intenta revocar las sesiones globalmente y el SDK limpia la sesión local incluso si falla la petición; la aplicación conserva el error para mostrarlo en el acceso. Los access tokens ya emitidos siguen sujetos a su expiración en Supabase.
+
+La protección de rutas es una comodidad de interfaz. Ningún rol en `localStorage` ni `user_metadata` concede permisos. `/admin` conserva exclusivamente datos ficticios y acciones deshabilitadas: las operaciones reales requieren RLS y autorización en el backend en una fase posterior.
+
+### Pruebas
+
+`npm test` incluye validación de orígenes, callback PKCE, confirmación, recuperación y errores. `npm run test:e2e` ejecuta casos de navegador en escritorio/móvil con el SDK real y respuestas Supabase **simuladas**: acceso, persistencia al recargar, cierre de sesión, protección de cuenta, registro sin sesión hasta confirmar, errores, correo de recuperación, actualización de contraseña, callback sin intercambios duplicados y redirección Google. Playwright inyecta URL/clave de prueba solo en su servidor; nunca deben usarse en producción. Para pruebas contra una web externa, los casos de autenticación simulada se deben excluir y completar manualmente.
+
+Verificación manual contra el proyecto real:
+
+- Registrar un correo propio, comprobar que no hay sesión antes de confirmar, abrir el enlace y comprobar `/cuenta`.
+- Acceder con Google y con correo/contraseña; recargar y comprobar «Mi cuenta» en escritorio y menú móvil.
+- Probar contraseña errónea, correo sin confirmar, enlace vencido y OAuth cancelado; comprobar los errores.
+- Solicitar recuperación, abrir el correo, guardar la nueva contraseña y verificar un nuevo acceso con ella.
+- Cerrar sesión y comprobar que `/cuenta` vuelve al acceso; repetir con dos pestañas abiertas.
+- Abrir `/auth/callback` directamente sin código; comprobar error recuperable. Abrir y recargar las rutas nuevas en Workers para verificar su fallback SPA.
+
+Las pruebas simuladas no acreditan la configuración del proveedor Google, entrega de correo, políticas del proyecto ni el despliegue público. La comprobación con cuentas y correos reales requiere la configuración pública del proyecto y una interacción del usuario con Google/correo.
+
+Para probar Authentication con Wrangler local usando el retorno autorizado, usa
+`npm run build && npx wrangler dev --local --port 5173` (detén Vite antes).
+Playwright también utiliza el puerto 5173 al ejecutar `npm run test:e2e:worker`.
+El puerto 8787 habitual de Wrangler puede servir la web, pero la aplicación
+rechaza iniciar flujos de correo/OAuth allí porque no está autorizado.

@@ -9,7 +9,11 @@ import Episode from "./pages/Episode";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+import Account from "./pages/Account";
+import AuthCallback from "./pages/AuthCallback";
+import { initializeAuth } from "./auth/session";
 import "./styles.css";
+void initializeAuth();
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
@@ -30,6 +34,10 @@ createRoot(document.getElementById("root")!).render(
             path="registro"
             element={<Auth key="register" mode="register" />}
           />
+          <Route path="auth/callback" element={<AuthCallback />} />
+          <Route path="cuenta" element={<Account />} />
+          <Route path="recuperar-contrasena" element={<Auth key="recover" mode="recover" />} />
+          <Route path="actualizar-contrasena" element={<Auth key="reset" mode="reset" />} />
           <Route path="admin" element={<Admin />} />
           <Route path="admin/:section" element={<Admin />} />
           <Route path="*" element={<NotFound />} />
