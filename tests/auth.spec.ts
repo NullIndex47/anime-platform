@@ -64,8 +64,11 @@ test('Failed remote signout clears local session and preserves the error', async
   await expect(page.getByRole('alert')).toContainText('Logout failed');
   await expect(page).toHaveURL(/\/iniciar-sesion$/);
 });
-test('Exact Preview origin starts Google and completes its PKCE callback', async ({ page }) => {
-  const preview = 'https://feat-yoru-phase-2a-supabase-auth-anime-platform.cuentagaming1304.workers.dev';
+for (const preview of [
+  'https://feat-yoru-phase-2a-supabase-auth-anime-platform.cuentagaming1304.workers.dev',
+  'https://feat-yoru-phase-2b-profiles-anime-platform.cuentagaming1304.workers.dev',
+]) {
+test(`Exact Preview ${preview} starts Google and completes its PKCE callback`, async ({ page }) => {
   await page.route(`${preview}/**`, async route => {
     const local = new URL(route.request().url()); local.protocol = 'http:'; local.host = 'localhost:5173';
     await route.fulfill({ response: await route.fetch({ url: local.href }) });
@@ -73,6 +76,7 @@ test('Exact Preview origin starts Google and completes its PKCE callback', async
   await googleLogin(page, preview);
   await expect(page.getByRole('heading', { name: '@Test_User' })).toBeVisible();
 });
+}
 test('Existing email-provider session is retained without offering password actions', async ({ page }) => {
   await page.goto('/iniciar-sesion');
   await page.evaluate(value => localStorage.setItem('sb-yoru-auth-test-auth-token', JSON.stringify(value)), {

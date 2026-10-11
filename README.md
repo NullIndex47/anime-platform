@@ -194,6 +194,7 @@ Autoriza exactamente en Authentication → URL Configuration → Redirect URLs:
 - `https://anime-platform.cuentagaming1304.workers.dev/auth/callback`
 - `http://localhost:5173/auth/callback`
 - `https://feat-yoru-phase-2a-supabase-auth-anime-platform.cuentagaming1304.workers.dev/auth/callback`
+- `https://feat-yoru-phase-2b-profiles-anime-platform.cuentagaming1304.workers.dev/auth/callback`
 
 El cliente mantiene una lista exacta de esos orígenes, sin comodines. `/iniciar-sesion` ofrece solo «Continuar con Google». `/registro`, `/recuperar-contrasena` y `/actualizar-contrasena` redirigen al acceso para conservar enlaces antiguos sin ofrecer formularios retirados. `/cuenta` muestra el correo, estado de confirmación y cierre de sesión.
 

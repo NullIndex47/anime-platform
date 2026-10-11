@@ -74,7 +74,13 @@ No rellenes perfiles con usernames derivados de correos ni confíes en user_meta
 8. En DevTools, bloquea temporalmente las peticiones a `/rest/v1/profiles`: la carga muestra error con Reintentar y un guardado fallido no anuncia éxito. Desbloquea y reintenta. No debe aparecer contenido interno del error de Supabase.
 9. Sin sesión, abre catálogo, ficha y episodio; la navegación pública continúa funcionando. Comprueba Mi perfil y bienvenida en móvil y escritorio.
 
-La nueva rama no se añade a la lista de dominios OAuth: no intentes verificar Google en una URL de preview de FASE 2B. Usa localhost o el dominio de producción ya autorizado cuando este cambio llegue allí por el proceso habitual. No se modifica la allowlist ni se solicita desplegar esta PR.
+Para probar Google en la Preview de FASE 2B, añade exactamente esta Redirect URL en Supabase Authentication → URL Configuration → Redirect URLs:
+
+```text
+https://feat-yoru-phase-2b-profiles-anime-platform.cuentagaming1304.workers.dev/auth/callback
+```
+
+Conserva las Redirect URLs anteriores de producción, localhost y Preview de FASE 2A. No uses comodines ni cambies Site URL para esta prueba. El cliente autoriza únicamente el origen exacto de esta Preview adicional; el flujo Google y los destinos del callback no cambian. Las variables públicas de Supabase deben estar disponibles en Workers Builds durante la compilación, como en FASE 2A. Si la migración ya está aplicada y verificada, no vuelvas a ejecutar SQL: continúa con los pasos de verificación real en esta Preview. Esta PR se actualiza sin fusionarla ni desplegar manualmente.
 
 ## Pruebas automatizadas y sus límites
 
