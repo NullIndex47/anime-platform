@@ -193,6 +193,7 @@ Playwright en `test-results/` que puede abrirse con `npx playwright show-trace`.
 4. En Supabase, mantén Google habilitado, Email habilitado y **Confirm email activado**. Configura Site URL como `https://anime-platform.cuentagaming1304.workers.dev` y autoriza exactamente:
    - `https://anime-platform.cuentagaming1304.workers.dev/auth/callback`
    - `http://localhost:5173/auth/callback`
+   - `https://feat-yoru-phase-2a-supabase-auth-anime-platform.cuentagaming1304.workers.dev/auth/callback`
 
 No incluyas `service_role`, claves `sb_secret_…`, secretos Google OAuth ni contraseñas de base de datos en `VITE_*`. Los secretos del proveedor Google se configuran exclusivamente en Supabase. El cliente deshabilita los formularios y muestra un error si falta configuración.
 
@@ -235,3 +236,5 @@ Para probar Authentication con Wrangler local usando el retorno autorizado, usa
 Playwright también utiliza el puerto 5173 al ejecutar `npm run test:e2e:worker`.
 El puerto 8787 habitual de Wrangler puede servir la web, pero la aplicación
 rechaza iniciar flujos de correo/OAuth allí porque no está autorizado.
+
+El origen de Preview anterior está autorizado de forma exacta en el cliente, sin comodines. Añade también su URL completa con `/auth/callback` a **Authentication → URL Configuration → Redirect URLs** en Supabase antes de probar Google o correo. Una Preview distinta sigue rechazada y requiere una autorización explícita.

@@ -12,10 +12,12 @@ function fake() {
   } } as unknown as SupabaseClient;
   return { client, calls };
 }
-test('Only the authorized production and development callback origins are accepted', () => {
+test('Only the authorized production, development and exact Preview callback origins are accepted', () => {
   assert.equal(callbackUrl('http://localhost:5173'), 'http://localhost:5173/auth/callback');
   assert.equal(callbackUrl('https://anime-platform.cuentagaming1304.workers.dev'), 'https://anime-platform.cuentagaming1304.workers.dev/auth/callback');
-  for (const origin of ['https://evil.example', 'https://anime-platform.cuentagaming1304.workers.dev.evil.example', 'http://localhost:8787']) assert.throws(() => callbackUrl(origin));
+  const preview = 'https://feat-yoru-phase-2a-supabase-auth-anime-platform.cuentagaming1304.workers.dev';
+  assert.equal(callbackUrl(preview), `${preview}/auth/callback`);
+  for (const origin of ['https://evil.example', 'https://anime-platform.cuentagaming1304.workers.dev.evil.example', 'http://localhost:8787', `${preview}.evil.example`, preview.replace('https:', 'http:'), preview.replace('feat-yoru-phase-2a-supabase-auth', 'other-preview'), `${preview}:444`, `${preview}@evil.example`]) assert.throws(() => callbackUrl(origin));
 });
 test('PKCE code exchanged once and redirect parameters ignored', async () => {
   const { client, calls } = fake();
@@ -37,4 +39,12 @@ test('Missing, expired and denied callbacks fail explicitly', async () => {
   await assert.rejects(processCallback(client, new URL('https://app/auth/callback')), /Falta el código/);
   await assert.rejects(processCallback(client, new URL('https://app/auth/callback#error=access_denied&error_description=Expired')), /Expired/);
   assert.deepEqual(calls, []);
+});
+
+test('Preview callback processes confirmation and recovery with fixed internal destinations', async () => {
+  const { client } = fake();
+  const callback = callbackUrl('https://feat-yoru-phase-2a-supabase-auth-anime-platform.cuentagaming1304.workers.dev');
+  assert.equal(await processCallback(client, new URL(`${callback}?code=test&next=https://evil.example`)), '/cuenta');
+  assert.equal(await processCallback(client, new URL(`${callback}?token_hash=test&type=email`)), '/cuenta');
+  assert.equal(await processCallback(client, new URL(`${callback}?token_hash=test&type=recovery`)), '/actualizar-contrasena');
 });

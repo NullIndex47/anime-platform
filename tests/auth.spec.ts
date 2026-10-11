@@ -87,3 +87,23 @@ test('Failed remote signout clears local session and preserves the error', async
   await page.goto('/cuenta');
   await expect(page).toHaveURL(/\/iniciar-sesion$/);
 });
+test('Exact Preview origin starts OAuth and handles the confirmation callback', async ({ page }) => {
+  const preview = 'https://feat-yoru-phase-2a-supabase-auth-anime-platform.cuentagaming1304.workers.dev';
+  // Serve the local build at the Preview origin without publishing or calling Google.
+  await page.route(`${preview}/**`, async route => {
+    const local = new URL(route.request().url());
+    local.protocol = 'http:';
+    local.host = 'localhost:5173';
+    const response = await route.fetch({ url: local.href });
+    await route.fulfill({ response });
+  });
+  await page.route(`${endpoint}/auth/v1/authorize**`, route => route.fulfill({ contentType: 'text/html', body: 'Google OAuth test' }));
+  await page.goto(`${preview}/iniciar-sesion`);
+  await page.getByRole('button', { name: 'Continuar con Google' }).click();
+  await expect(page).toHaveURL(/provider=google/);
+  expect(new URL(page.url()).searchParams.get('redirect_to')).toBe(`${preview}/auth/callback`);
+  await page.route(`${endpoint}/auth/v1/verify**`, route => route.fulfill({ json: session }));
+  await page.goto(`${preview}/auth/callback?token_hash=test&type=email&next=https://evil.example`);
+  await expect(page).toHaveURL(`${preview}/cuenta`);
+  await expect(page.getByText(user.email, { exact: true })).toBeVisible();
+});
