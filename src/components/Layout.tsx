@@ -19,6 +19,7 @@ export function Layout() {
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
+  const authPage = location.pathname === "/iniciar-sesion" || location.pathname === "/iniciar-sesion/";
   useEffect(() => {
     setMenu(false);
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -47,11 +48,12 @@ export function Layout() {
       <a className="skip-link" href="#main">
         Saltar al contenido
       </a>
-      <header className="site-header">
+      <header className={`site-header${authPage ? " auth-header" : ""}`}>
         <div className="header-inner">
           <Link to="/" aria-label="Yoru, inicio">
             <Logo />
           </Link>
+          {authPage ? <Link className="auth-back-link" to="/catalogo">Explorar YORU <ArrowUpRight size={15} aria-hidden="true" /></Link> : <>
           <nav className="desktop-nav" aria-label="Navegación principal">
             <NavLink to="/" end>
               Inicio
@@ -85,8 +87,9 @@ export function Layout() {
           >
             {menu ? <X /> : <Menu />}
           </button>
+          </>}
         </div>
-        {menu && (
+        {!authPage && menu && (
           <nav
             id="mobile-navigation"
             className="mobile-nav"
@@ -117,7 +120,7 @@ export function Layout() {
       <main id="main" tabIndex={-1}>
         <Outlet />
       </main>
-      <footer className="site-footer">
+      {authPage ? <footer className="auth-footer"><div className="container">© 2026 Yoru · Historias que se quedan contigo.</div></footer> : <footer className="site-footer">
         <div className="container footer-top">
           <div>
             <Link to="/" aria-label="Yoru, inicio">
@@ -145,7 +148,7 @@ export function Layout() {
             FASE 2A <span /> Todos los contenidos son ficticios
           </span>
         </div>
-      </footer>
+      </footer>}
     </>
   );
 }

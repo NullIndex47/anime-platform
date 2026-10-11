@@ -83,3 +83,28 @@ test('Existing email-provider session is retained without offering password acti
   await expect(page.getByText(user.email, { exact: true })).toBeVisible();
   await expect(page.locator('a[href="/recuperar-contrasena"]')).toHaveCount(0);
 });
+test('Access screen has a focused header, three benefits and an accessible Google CTA', async ({ page }, testInfo) => {
+  await page.goto('/iniciar-sesion');
+  const header = page.getByRole('banner');
+  await expect(header.getByRole('link')).toHaveCount(2);
+  await expect(header.getByRole('search')).toHaveCount(0);
+  await expect(header.getByRole('button')).toHaveCount(0);
+  await expect(page.locator('.auth-benefits li')).toHaveCount(3);
+  const cta = page.getByRole('button', { name: 'Continuar con Google' });
+  await expect(cta).toHaveAccessibleDescription('¿Primera vez? Al continuar con Google se crea tu cuenta automáticamente.');
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: 'Saltar al contenido' })).toBeFocused();
+  for (let i = 0; i < 3; i++) await page.keyboard.press('Tab');
+  await expect(cta).toBeFocused();
+  await page.screenshot({ path: `work/auth-access-${testInfo.project.name}.png`, fullPage: true });
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await expect(cta).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  }
+  await header.getByRole('link', { name: 'Explorar YORU' }).click();
+  await expect(page).toHaveURL(/\/catalogo$/);
+  await expect(page.getByRole('button', { name: 'Abrir menú' }).or(page.getByRole('search'))).not.toHaveCount(0);
+  await expect(page.locator('.auth-footer')).toHaveCount(0);
+  await expect(page.locator('.site-footer')).toHaveCount(1);
+});
