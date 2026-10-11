@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Account from "./pages/Account";
+import Welcome from "./pages/Welcome";
 import AuthCallback from "./pages/AuthCallback";
 import { initializeAuth } from "./auth/session";
 import "./styles.css";
@@ -36,6 +37,8 @@ createRoot(document.getElementById("root")!).render(
           />
           <Route path="auth/callback" element={<AuthCallback />} />
           <Route path="cuenta" element={<Account />} />
+          <Route path="bienvenida" element={<Welcome />} />
+          <Route path="mi-perfil" element={<Account />} />
           <Route path="recuperar-contrasena" element={<Navigate to="/iniciar-sesion" replace />} />
           <Route path="actualizar-contrasena" element={<Navigate to="/iniciar-sesion" replace />} />
           <Route path="admin" element={<Admin />} />

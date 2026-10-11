@@ -3092,3 +3092,16 @@ td {
   .auth-access-page .auth-form-section > h1 { font-size: 28px; }
   .auth-access-page .auth-google-button { font-size: 13px; gap: 8px; padding: 12px; }
 }
+
+.profile-page { max-width: 780px; }
+.profile-panel { padding: clamp(24px, 5vw, 48px); display: grid; gap: 24px; }
+.profile-avatar { width: 80px; height: 80px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); color: var(--accent); border: 1px solid var(--border); }
+.profile-form { display: grid; gap: 14px; min-width: 0; }
+.profile-form label { font-weight: 600; }
+.profile-form input { width: 100%; min-width: 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--color-ink); color: inherit; font: inherit; }
+.profile-form input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.profile-form input[aria-invalid="true"] { border-color: #ef9c9c; }
+.profile-form p { overflow-wrap: anywhere; line-height: 1.6; }
+.profile-form button { justify-self: start; }
+.profile-catalog-link { text-decoration: underline; text-underline-offset: 4px; }
+.profile-signout { justify-self: start; }

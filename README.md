@@ -212,3 +212,7 @@ Para comprobar manualmente el proyecto real: acceder por primera vez con Google,
 `npm run build` comprueba TypeScript y genera dist. Para probar Authentication con Wrangler local: `npm run build && npx wrangler dev --local --port 5173` (detén Vite antes). El puerto 8787 habitual sirve la web pero no está autorizado para iniciar OAuth. No se fusiona la PR ni se despliega manualmente como parte de esta entrega.
 
 La pantalla de acceso conserva el paisaje original y refuerza el panel derecho con título, subtítulo, tres beneficios y un CTA ámbar con icono Google. Solo en `/iniciar-sesion` el header muestra el logo y «Explorar YORU», y el footer se reduce a una línea. La nota del botón explica el alta automática. Las pruebas verifican navegación por teclado, descripción accesible, ausencia de desbordamiento a 320/390/768/1440 px y recuperación de la navegación habitual al salir del acceso.
+
+## FASE 2B: perfiles
+
+Consulta [la guía de perfiles](docs/phase-2b-profiles.md) para aplicar la migración SQL de forma controlada, tratar usuarios existentes y verificar RLS y persistencia real. Esta PR no añade migraciones ni despliegues automáticos.
