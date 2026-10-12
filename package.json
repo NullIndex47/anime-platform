@@ -11,14 +11,15 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "dev:worker": "npm run build && wrangler dev",
-    "deploy": "npm run build && wrangler deploy",
+    "deploy": "npm run build && node --import tsx scripts/deploy-production.ts",
     "test": "npm run moderation:check && node --import tsx --test --test-isolation=none src/services/*.test.ts",
     "test:e2e": "playwright test",
     "test:e2e:worker": "E2E_SERVER=worker playwright test",
     "moderation:generate": "node --import tsx scripts/generate-username-moderation.ts",
     "moderation:check": "node --import tsx scripts/generate-username-moderation.ts --check",
     "deploy:preview": "node --import tsx scripts/deploy-preview.ts",
-    "preview:dry-run": "node --import tsx scripts/deploy-preview.ts --dry-run"
+    "preview:dry-run": "node --import tsx scripts/deploy-preview.ts --dry-run",
+    "production:dry-run": "node --import tsx scripts/deploy-production.ts --dry-run"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",
