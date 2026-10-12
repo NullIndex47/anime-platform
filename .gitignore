@@ -9,3 +9,6 @@ work/
 .wrangler/
 test-results/
 playwright-report/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example

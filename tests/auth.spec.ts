@@ -67,6 +67,7 @@ test('Failed remote signout clears local session and preserves the error', async
 for (const preview of [
   'https://feat-yoru-phase-2a-supabase-auth-anime-platform.cuentagaming1304.workers.dev',
   'https://feat-yoru-phase-2b-profiles-anime-platform.cuentagaming1304.workers.dev',
+  'https://feat-yoru-phase-3a-anime-catalog-anime-platform.cuentagaming1304.workers.dev',
 ]) {
 test(`Exact Preview ${preview} starts Google and completes its PKCE callback`, async ({ page }) => {
   await page.route(`${preview}/**`, async route => {

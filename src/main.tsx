@@ -8,6 +8,7 @@ import AnimeDetail from "./pages/AnimeDetail";
 import Episode from "./pages/Episode";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import AdminDemo from "./pages/AdminDemo";
 import NotFound from "./pages/NotFound";
 import Account from "./pages/Account";
 import Welcome from "./pages/Welcome";
@@ -41,6 +42,8 @@ createRoot(document.getElementById("root")!).render(
           <Route path="mi-perfil" element={<Account />} />
           <Route path="recuperar-contrasena" element={<Navigate to="/iniciar-sesion" replace />} />
           <Route path="actualizar-contrasena" element={<Navigate to="/iniciar-sesion" replace />} />
+          <Route path="demo/admin" element={<AdminDemo />} />
+          <Route path="demo/admin/:section" element={<AdminDemo />} />
           <Route path="admin" element={<Admin />} />
           <Route path="admin/:section" element={<Admin />} />
           <Route path="*" element={<NotFound />} />

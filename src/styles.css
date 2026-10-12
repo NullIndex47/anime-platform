@@ -3105,3 +3105,30 @@ td {
 .profile-form button { justify-self: start; }
 .profile-catalog-link { text-decoration: underline; text-underline-offset: 4px; }
 .profile-signout { justify-self: start; }
+
+
+/* Real admin uses the existing YORU panels, amber controls and responsive grid. */
+.catalog-import { padding: clamp(18px, 3vw, 30px); }
+.catalog-import form, .metadata-editor { display: grid; gap: 14px; }
+.catalog-import label { display: grid; gap: 7px; }
+.catalog-import input, .catalog-import textarea, .catalog-import select { width: 100%; min-width: 0; border: 1px solid var(--border, #343434); border-radius: 8px; background: #151515; color: #eee; padding: 12px; font: inherit; }
+.catalog-import textarea { min-height: 140px; }
+.import-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 12px; margin-top: 20px; }
+.import-result { display: grid; gap: 8px; padding: 16px; text-align: left; color: inherit; cursor: pointer; }
+.import-result img { width: 70px; height: 100px; object-fit: cover; border-radius: 6px; }
+.import-banner { width: 100%; max-height: 240px; object-fit: cover; border-radius: 8px; }
+.import-metadata { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; margin: 20px 0; }
+.import-metadata dt { opacity: .6; font-size: .8rem; }
+.import-metadata dd { margin: 5px 0 0; overflow-wrap: anywhere; }
+.admin-content > .panel { margin-bottom: 18px; }
+.catalog-import h2 { font-size: 1.3rem; font-weight: 600; margin-bottom: 16px; }
+.admin-content caption { padding: 14px 16px; text-align: left; }
+.admin-content td .text-button + .text-button { margin-left: 12px; }
+
+.user-navigation { position: relative; margin-left: -36px; }
+.user-menu-toggle { border: 0; color: var(--muted); }
+.user-dropdown { position: absolute; right: 0; top: 44px; min-width: 230px; padding: 8px; box-shadow: 0 12px 32px #0008; z-index: 10; }
+.user-dropdown a { display: flex; align-items: center; gap: 9px; padding: 12px; font-size: 12px; color: #dddcd6; border-radius: 6px; }
+.user-dropdown a:hover, .user-dropdown a:focus-visible { color: var(--accent); background: #ffffff08; }
+.mobile-nav > a { display: flex; align-items: center; gap: 8px; }
+@media (max-width: 700px) { .user-navigation { display: none; } }
