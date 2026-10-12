@@ -12,6 +12,8 @@ import {
   updateAnime,
 } from "../services/catalog-admin";
 import type { AnimeMetadata, AnimePreview, CatalogRow } from "../types/catalog";
+import { createAnime, emptyMetadata } from "../services/episode-management";
+import SeasonManager from "../components/SeasonManager";
 import NotFound from "./NotFound";
 
 const message = (error: unknown) =>
@@ -88,7 +90,10 @@ function AdminCatalog() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<AnimePreview[] | null>(null);
   const [selected, setSelected] = useState<AnimePreview | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [organizing, setOrganizing] = useState<CatalogRow | null>(null);
   const [editing, setEditing] = useState<CatalogRow | null>(null);
+  const [providerError, setProviderError] = useState("");
   const [permissions, setPermissions] = useState<{
     enabled: boolean;
     images: boolean;
@@ -109,7 +114,9 @@ function AdminCatalog() {
     const controller = new AbortController();
     setBusy(true);
     setError("");
-    Promise.all([
+    setProviderError("");
+    setPermissions(null);
+    Promise.allSettled([
       listDrafts(),
       anilistRequest<{ enabled: boolean; images: boolean }>(
         { action: "status" },
@@ -118,8 +125,13 @@ function AdminCatalog() {
     ])
       .then(([items, flags]) => {
         if (!controller.signal.aborted) {
-          setRows(items);
-          setPermissions(flags);
+          if (items.status === "fulfilled") setRows(items.value);
+          else setError(message(items.reason));
+          if (flags.status === "fulfilled") setPermissions(flags.value);
+          else
+            setProviderError(
+              "No se pudo comprobar AniList. La gestión local sigue disponible.",
+            );
         }
       })
       .catch((e) => {
@@ -155,8 +167,8 @@ function AdminCatalog() {
           Catálogo real<span className="accent">.</span>
         </h1>
         <p>
-          Importación selectiva y borradores privados. Ningún título se publica
-          en esta fase.
+          Creación local, temporadas y episodios privados. Ningún título se
+          publica en esta fase.
         </p>
       </div>
       <div className="admin-layout">
@@ -164,7 +176,7 @@ function AdminCatalog() {
           className="admin-nav panel"
           aria-label="Secciones de administración"
         >
-          <Link to="/admin/animes">
+          <Link to="/admin/animes" onClick={() => setOrganizing(null)}>
             <Library size={18} /> Animes reales
           </Link>
           <span className="admin-demo-label">
@@ -190,7 +202,56 @@ function AdminCatalog() {
           )}
           {busy && <p role="status">Cargando…</p>}
           <div className="panel catalog-import">
+            <h2>Crear un anime local</h2>
+            <p>Sin APIs externas. Se guardará como borrador privado.</p>
+            <button
+              className="button"
+              disabled={busy}
+              onClick={() => {
+                setCreating(true);
+                setEditing(null);
+              }}
+            >
+              Nuevo anime
+            </button>
+          </div>
+          {creating && (
+            <MetadataEditor
+              row={{ ...emptyMetadata, id: "new", catalog_publication: null }}
+              busy={busy}
+              cancel={() => setCreating(false)}
+              save={(metadata) =>
+                void run(async () => {
+                  await createAnime(metadata);
+                  setRows(await listDrafts());
+                  setCreating(false);
+                  setNotice("Anime local creado como borrador privado.");
+                })
+              }
+              creating
+            />
+          )}
+          {organizing && (
+            <SeasonManager
+              key={organizing.id}
+              anime={organizing}
+              close={() => setOrganizing(null)}
+            />
+          )}
+          <div className="panel catalog-import">
             <h2>Buscar en AniList</h2>
+            {providerError && (
+              <p role="status">
+                {providerError}{" "}
+                <button
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => setRetry((v) => v + 1)}
+                >
+                  Reintentar estado
+                </button>
+              </p>
+            )}
             {permissions && !permissions.enabled && (
               <p className="demo-notice">
                 Integración desactivada: pendiente de autorización de AniList.
@@ -370,11 +431,21 @@ function AdminCatalog() {
                     <td>
                       <button
                         className="text-button"
+                        disabled={busy}
+                        onClick={() => setOrganizing(row)}
+                      >
+                        Temporadas y episodios
+                      </button>
+                      <button
+                        className="text-button"
                         disabled={
                           busy ||
                           (!!row.catalog_origins && !permissions?.enabled)
                         }
-                        onClick={() => setEditing(row)}
+                        onClick={() => {
+                          setEditing(row);
+                          setCreating(false);
+                        }}
                       >
                         Editar
                       </button>
@@ -384,11 +455,14 @@ function AdminCatalog() {
                         onClick={() => {
                           if (
                             window.confirm(
-                              `¿Eliminar el borrador «${row.title}»?`,
+                              `¿Eliminar «${row.title}» y todas sus temporadas y episodios? Esta acción no se puede deshacer.`,
                             )
                           )
                             void run(async () => {
                               await deleteAnime(row.id);
+                              if (organizing?.id === row.id)
+                                setOrganizing(null);
+                              if (editing?.id === row.id) setEditing(null);
                               setRows(await listDrafts());
                               setNotice("Anime eliminado.");
                             });
@@ -416,7 +490,13 @@ function AdminCatalog() {
               save={(metadata) =>
                 void run(async () => {
                   await updateAnime(editing.id, metadata);
-                  setRows(await listDrafts());
+                  const savedRows = await listDrafts();
+                  setRows(savedRows);
+                  setOrganizing((current) =>
+                    current?.id === editing.id
+                      ? savedRows.find((row) => row.id === editing.id) || null
+                      : current,
+                  );
                   setEditing(null);
                   setNotice("Datos locales guardados.");
                 })
@@ -433,7 +513,9 @@ function MetadataEditor({
   busy,
   cancel,
   save,
+  creating = false,
 }: {
+  creating?: boolean;
   row: CatalogRow;
   busy: boolean;
   cancel: () => void;
@@ -471,12 +553,11 @@ function MetadataEditor({
           genres: genres
             .split(",")
             .map((v) => v.trim())
-            .filter(Boolean)
-            .slice(0, 30),
+            .filter(Boolean),
         });
       }}
     >
-      <h2>Editar datos locales</h2>
+      <h2>{creating ? "Nuevo anime local" : "Editar datos locales"}</h2>
       <p>El origen permanece intacto. Guardar no publica el anime.</p>
       {fields.map(([key, label, max]) => (
         <label key={key}>
@@ -564,7 +645,7 @@ function MetadataEditor({
         </label>
       ))}
       <button className="button" disabled={busy}>
-        Guardar datos locales
+        {creating ? "Crear borrador" : "Guardar datos locales"}
       </button>
       <button
         type="button"

@@ -3132,3 +3132,16 @@ td {
 .user-dropdown a:hover, .user-dropdown a:focus-visible { color: var(--accent); background: #ffffff08; }
 .mobile-nav > a { display: flex; align-items: center; gap: 8px; }
 @media (max-width: 700px) { .user-navigation { display: none; } }
+
+/* Private catalogue management, using the existing YORU palette. */
+.management-heading, .management-actions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; }
+.management-heading h2 { overflow-wrap: anywhere; }
+.season-list { display: grid; gap: .8rem; margin: 1rem 0; }
+.season-row { padding: 1rem; display: grid; gap: .7rem; overflow-wrap: anywhere; }
+.season-row > span { color: var(--muted); }
+.episode-manager { border-top: 1px solid #354139; margin-top: 1.5rem; padding-top: 1.5rem; }
+.authorization-check { display: flex !important; align-items: flex-start; gap: .7rem; }
+.authorization-check input { width: auto !important; margin-top: .3rem; accent-color: #a3e635; }
+.season-manager .metadata-editor { margin: 1rem 0; }
+.season-manager button { white-space: normal; }
+@media (max-width: 600px) { .management-actions { justify-content: flex-start; } .management-heading { align-items: flex-start; } }
