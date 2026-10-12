@@ -157,7 +157,7 @@ Pendientes externos: autorización AniList/imagen, aplicación personal del SQL,
 
 ## Verificación realizada en esta entrega
 
-- 34 pruebas unitarias/PostgreSQL aprobadas, incluidos RLS real, denegación directa de RPC/DML, revocación, duplicados y reserva concurrente del límite.
+- 38 pruebas unitarias/PostgreSQL aprobadas, incluidos RLS real, denegación directa de RPC/DML, revocación, duplicados y reserva concurrente del límite.
 - 56 E2E originales con Vite aprobadas en escritorio/móvil: administración, Google OAuth y los tres Preview, perfiles, moderación y reproductor.
 - 66 E2E con Wrangler local aprobadas en escritorio/móvil, incluyendo importación anónima por HTTP rechazada con 401 JSON, sin fallback SPA.
 - Ocho E2E adicionales de navegación con Vite aprobadas: espera de permisos, rechazo de usuarios normales/errores, cambios de sesión y respuestas atrasadas.
@@ -176,22 +176,66 @@ El menú de usuario de escritorio y la navegación móvil incluyen «Panel de ad
 | --- | --- | --- |
 | `VITE_SUPABASE_URL` | Workers Builds → Build variables, tanto producción como ramas no productivas | Vite al compilar; termina en el bundle público |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Workers Builds → Build variables | Vite al compilar; clave pública `sb_publishable_*` |
-| `SUPABASE_URL` | Worker → Settings → Variables & Secrets, Runtime | `env.SUPABASE_URL` en el Worker |
-| `SUPABASE_PUBLISHABLE_KEY` | Worker → Settings → Variables & Secrets, Runtime | `env.SUPABASE_PUBLISHABLE_KEY` en el Worker |
+| `SUPABASE_URL` | Production: Settings → Variables & Secrets; Preview: wrapper desde Builds | `env.SUPABASE_URL` en el Worker |
+| `SUPABASE_PUBLISHABLE_KEY` | Production: Settings → Variables & Secrets; Preview: wrapper desde Builds | `env.SUPABASE_PUBLISHABLE_KEY` en el Worker |
 | `ANILIST_ENABLED` | Configuración Runtime; el repositorio fija `false` | Worker; sigue requiriendo autorización PostgreSQL |
 
 Configurar solo las dos `VITE_*` permite el acceso Google y la RPC del menú, pero no configura `/api/admin/anilist`: una sesión válida obtendrá 503 «Administración no configurada» si faltan sus bindings Runtime. Añadir las dos `SUPABASE_*` como variables de Build tampoco las convierte en bindings Runtime. Usar la misma URL y clave pública para frontend y Worker de cada versión; no mezclar proyectos.
 
 `wrangler.jsonc` activa `keep_vars:true` para conservar las variables Runtime administradas en el dashboard durante las siguientes publicaciones por Wrangler. No crea variables ausentes ni convierte variables de Build. Los nombres `SUPABASE_*` se dejan fuera del repositorio; no se incluyen claves reales ni placeholders que simulen una configuración válida. `ANILIST_ENABLED=false` continúa declarado explícitamente: conservar variables no autoriza al proveedor ni activa AniList. `.dev.vars.example` sirve solo como plantilla local; `.dev.vars` está excluido y no configura Cloudflare remoto.
 
-Para la Preview de esta rama, comprobar personalmente:
-
-1. En el Worker `anime-platform`, verificar las Build variables utilizadas por el build de la rama `feat/yoru-phase-3a-anime-catalog` y, por separado, sus bindings Runtime en Settings → Variables & Secrets.
-2. Confirmar qué versión alimenta la URL Preview y que esa versión contiene ambos bindings `SUPABASE_*`. Una versión anterior puede conservar su configuración anterior: editar variables no modifica necesariamente una versión Preview ya subida. Verificarlo cuando el flujo automático de Builds genere una nueva versión, sin desplegar manualmente para esta tarea.
-3. Las versiones Preview de ramas no equivalen por sí solas a un entorno Wrangler llamado `preview`. No añadir `env.preview` ni `--env preview` sin configurar deliberadamente un Worker distinto. Si se usa un entorno nombrado, sus variables/bindings deben configurarse explícitamente allí; no asumir que hereda `vars`.
-4. Mantener `ANILIST_ENABLED=false`, aplicar previamente la migración y conceder el admin mediante SQL del propietario. Con sesión admin, Network debe mostrar `yoru_is_admin → true`, el enlace visible y `/api/admin/anilist` con `{action:'status'} → 200`, indicando integración desactivada. Sin sesión: 401; cuenta normal: 403. No publicar tokens en capturas o logs.
-5. Conservar el callback exacto de Preview documentado arriba. Si se cambia `VITE_*`, hace falta un nuevo build; cambiar solo Runtime no reescribe el bundle React.
-
+Para la Preview de esta rama utilizar el procedimiento específico de Runtime Preview descrito abajo. `keep_vars` no sustituye `previews.vars`: las Previews creadas con `wrangler preview` no heredan las variables Runtime de Production.
 La revisión aquí cubre el código/configuración del repositorio y el comportamiento local. No hay credenciales ni conexión de administración Cloudflare para leer los bindings de tu dashboard; no se ha verificado ni modificado su configuración remota.
 
 Referencias oficiales: [Workers Builds: variables de compilación](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/), [Wrangler: `keep_vars` y variables no heredables](https://developers.cloudflare.com/workers/wrangler/configuration/), [URLs de versiones Preview](https://developers.cloudflare.com/workers/versions-and-deployments/version-urls/).
+
+
+## Corrección Runtime para `wrangler preview`
+
+La URL Preview puede servir `/api/*` correctamente y aun así devolver «Administración no configurada»: Production y Preview necesitan sus propios bindings. GET con respuesta 405 solo demuestra que se ejecuta el Worker, no que Supabase esté configurado. Las [condiciones de configuración oficiales de Previews](https://developers.cloudflare.com/workers/previews/configuration/) requieren `previews.vars` para variables; `assets` se mantiene en el nivel superior.
+
+El repositorio declara explícitamente `previews.vars.ANILIST_ENABLED="false"`. `scripts/deploy-preview.ts` lee exclusivamente las dos variables públicas `VITE_SUPABASE_*` del entorno de Builds, valida HTTPS y el prefijo `sb_publishable_*` y genera un JSON temporal con:
+
+```text
+previews.vars.SUPABASE_URL ← VITE_SUPABASE_URL
+previews.vars.SUPABASE_PUBLISHABLE_KEY ← VITE_SUPABASE_PUBLISHABLE_KEY
+previews.vars.ANILIST_ENABLED ← "false" (siempre)
+```
+
+No convierte automáticamente cualquier variable de Build: realiza solo ese mapeo explícito para Preview. Ambas capas apuntan al mismo proyecto Supabase, por lo que la sesión del navegador es válida para el Worker. No busca credenciales de Production ni utiliza service_role, claves `sb_secret_*` o JWT legacy. Valores ausentes o inválidos detienen el proceso antes de invocar Wrangler.
+
+### Cambio personal en Cloudflare Builds
+
+En la configuración de ramas no productivas/Preview del Worker `anime-platform`:
+
+- Conservar `npm run build` como Build command.
+- Sustituir el comando de publicación Preview `npx wrangler preview` por **`npm run deploy:preview`**.
+- Confirmar que ese job tiene disponibles `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`; las variables de Production de Builds pueden tener un ámbito distinto. Usar las mismas que el build de esa Preview.
+- **No cambiar el comando de Production** (`npm run deploy` o el ya configurado), sus variables, secretos ni bindings. El script de Preview no se añade a `build` ni a `deploy`.
+
+El wrapper ejecuta el Wrangler instalado por `npm ci`, versión fijada en el lockfile (4.149.0), con `preview --config <archivo temporal>`. Es el mismo comando Wrangler Preview ya utilizado, con su configuración explícita; no usa `versions upload`, `deploy` remoto ni `--env preview`. Dejar que el flujo automático existente de Builds cree la siguiente Preview. No se ha invocado una publicación remota durante esta corrección.
+
+### Manejo de valores y logs
+
+El archivo temporal vive en `work/preview-runtime-*` (excluido de Git), con directorio privado y archivo modo 0600. Se elimina al finalizar, también si Wrangler falla. El JSON conserva la configuración de assets y el Worker; solo añade valores al bloque Preview. Las rutas locales se resuelven a absolutas para que el archivo temporal no cambie el entrypoint ni los assets.
+
+No se pasan claves como argumentos `--var`, no se imprimen las variables ni se guarda un JSON con valores reales en Git. El wrapper consume stdout/stderr de Wrangler sin retransmitirlos porque Wrangler puede mostrar bindings plaintext; sus logs privados temporales se eliminan junto al archivo. Builds recibe solo un mensaje de éxito o un error genérico. Si falla, revisar el estado de autenticación de Cloudflare, las dos variables públicas y la versión de Wrangler, sin activar dumps del entorno, `set -x` ni publicar el archivo generado. Consultar la URL Preview en Cloudflare; el wrapper no reproduce la salida cruda de Wrangler.
+
+Los valores son públicos (ya están en el bundle React), pero se evitan igualmente en Git y logs. Los secretos de autenticación Cloudflare que el job ya recibe se conservan en el entorno, no se leen ni se imprimen. `ANILIST_ENABLED` está fijado a false incluso si el job contiene otra variable con valor true.
+
+### Validación sin desplegar
+
+```bash
+npm ci
+npm test
+npm run build
+npm run preview:dry-run
+```
+
+Para el último comando hacen falta las dos `VITE_SUPABASE_*` en el entorno del proceso. En local utilizar valores ficticios o un mecanismo de carga privado; no pegar claves reales en comandos que queden registrados. El script no carga `.env.local` automáticamente. `wrangler preview` 4.149.0 no admite `--dry-run`: el modo local genera una proyección de `previews.vars` y ejecuta **solo** `wrangler deploy --dry-run`, sin autenticar ni publicar. Comprueba la compilación y los bindings efectivos; no acredita una conexión remota. La ruta normal está probada para invocar exclusivamente `preview --config`.
+
+Después del próximo build automático, con tu cuenta admin y la migración/rol ya aplicados: abrir `/admin`, comprobar POST `/api/admin/anilist` con `{action:"status"}` → 200 y `{enabled:false,images:false}`. Debe aparecer «Integración desactivada: pendiente de autorización de AniList». Una cuenta normal debe continuar recibiendo 403; sin sesión, 401. Si aparece 503, revisar que Builds usa el nuevo comando y tiene las dos variables públicas en el job de Preview. No basta con configurar las `VITE_*` y continuar ejecutando el comando Preview anterior sin el wrapper.
+
+Las pruebas verifican mapeo de Runtime, rechazo de entradas inválidas, conservación de Production/enrutamiento, comandos exactos, privacidad y limpieza temporal, y respuesta del Worker con autorización admin e integración desactivada. Worker, rutas y SQL no cambian. La comprobación real en Cloudflare queda pendiente del siguiente job automático y de tu cuenta; no se ha ejecutado SQL remoto ni se ha desplegado manualmente.
+
+Verificación de esta corrección: 38 pruebas unitarias/PostgreSQL aprobadas, build TypeScript/Vite correcto y `npm run preview:dry-run` ejecutado con valores ficticios mediante Wrangler real. Producción, Worker y migraciones sin cambios; los 66 E2E anteriores corresponden a la implementación de navegación ya verificada.

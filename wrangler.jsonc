@@ -7,7 +7,9 @@
   "keep_vars": true,
   "vars": { "ANILIST_ENABLED": "false" },
   "compatibility_date": "2026-10-10",
-  "previews": {},
+  "previews": {
+    "vars": { "ANILIST_ENABLED": "false" }
+  },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",

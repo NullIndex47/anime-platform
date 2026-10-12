@@ -2,6 +2,8 @@
 
 Consulta [la guía de FASE 3A](docs/phase-3a-catalog.md) para el SQL incremental, la concesión manual de administrador, los bindings de Worker, la revisión de AniList y las pruebas. `/admin` está protegido; la maqueta pública se conserva por separado en `/demo/admin`. AniList queda desactivado hasta resolver su autorización. El catálogo público y el reproductor siguen siendo demo claramente identificada; no se publican importaciones ni se inventan episodios.
 
+Para Workers Preview, conservar `npm run build` y cambiar únicamente el comando de publicación de ramas no productivas a `npm run deploy:preview`. Este comando mapea las dos variables públicas `VITE_SUPABASE_*` de Builds a bindings Runtime de Preview sin guardar sus valores en Git. Ver la guía para `npm run preview:dry-run`; Production conserva su comando actual.
+
 Las secciones siguientes documentan las fases anteriores y su estado histórico. La guía 3A describe el comportamiento actual de administración y la integración preparada.
 
 # YORU · anime-platform
