@@ -2,6 +2,9 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "anime-platform",
   "main": "worker/index.ts",
+  // Preserve project-specific runtime variables configured in Cloudflare.
+  // VITE_* build variables do not populate Worker env bindings.
+  "keep_vars": true,
   "vars": { "ANILIST_ENABLED": "false" },
   "compatibility_date": "2026-10-10",
   "previews": {},

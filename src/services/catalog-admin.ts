@@ -20,8 +20,13 @@ export function databaseError(error: { code?: string } | null) {
           : "No se pudo completar la operación en Supabase. Puedes reintentar.",
   );
 }
-export async function isAdministrator() {
-  const { data, error } = await requireClient().rpc("yoru_is_admin");
+export async function isAdministrator(signal?: AbortSignal) {
+  const request = requireClient().rpc("yoru_is_admin");
+  const { data, error } = await request.abortSignal(
+    signal
+      ? AbortSignal.any([signal, AbortSignal.timeout(10000)])
+      : AbortSignal.timeout(10000),
+  );
   databaseError(error);
   return data === true;
 }

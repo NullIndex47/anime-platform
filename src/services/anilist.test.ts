@@ -214,3 +214,38 @@ test("Shared reservations prevent upstream calls; 429 persists cooldown; duplica
     409,
   );
 });
+
+test("Build variables do not substitute Worker runtime bindings; configured runtime can report disabled integration", async () => {
+  let calls = 0;
+  const fetcher: typeof fetch = async (url, init) => {
+    calls++;
+    assert.equal(
+      String(url),
+      "https://test.supabase.co/rest/v1/rpc/yoru_provider_status",
+    );
+    assert.equal(
+      (init?.headers as Record<string, string>).apikey,
+      "sb_publishable_test",
+    );
+    return Response.json({ metadata: false, images: false });
+  };
+  const buildOnly = {
+    ASSETS: env.ASSETS,
+    VITE_SUPABASE_URL: env.SUPABASE_URL,
+    VITE_SUPABASE_PUBLISHABLE_KEY: env.SUPABASE_PUBLISHABLE_KEY,
+  };
+  const missing = await handleApi(
+    request({ action: "status" }),
+    buildOnly,
+    fetcher,
+  );
+  assert.equal(missing.status, 503);
+  assert.equal(calls, 0);
+  const configured = await handleApi(
+    request({ action: "status" }),
+    env,
+    fetcher,
+  );
+  assert.equal(configured.status, 200);
+  assert.deepEqual(await configured.json(), { enabled: false, images: false });
+});

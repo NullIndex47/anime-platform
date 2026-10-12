@@ -157,10 +157,41 @@ Pendientes externos: autorización AniList/imagen, aplicación personal del SQL,
 
 ## Verificación realizada en esta entrega
 
-- 33 pruebas unitarias/PostgreSQL aprobadas, incluidos RLS real, denegación directa de RPC/DML, revocación, duplicados y reserva concurrente del límite.
-- 56 E2E con Vite aprobadas en escritorio/móvil: administración, Google OAuth y los tres Preview, perfiles, moderación y reproductor.
-- 58 E2E con Wrangler local aprobadas en escritorio/móvil, incluyendo importación anónima por HTTP rechazada con 401 JSON, sin fallback SPA.
+- 34 pruebas unitarias/PostgreSQL aprobadas, incluidos RLS real, denegación directa de RPC/DML, revocación, duplicados y reserva concurrente del límite.
+- 56 E2E originales con Vite aprobadas en escritorio/móvil: administración, Google OAuth y los tres Preview, perfiles, moderación y reproductor.
+- 66 E2E con Wrangler local aprobadas en escritorio/móvil, incluyendo importación anónima por HTTP rechazada con 401 JSON, sin fallback SPA.
+- Ocho E2E adicionales de navegación con Vite aprobadas: espera de permisos, rechazo de usuarios normales/errores, cambios de sesión y respuestas atrasadas.
 - TypeScript, compilación y `wrangler deploy --dry-run` correctos. Vite conserva un aviso no bloqueante de tamaño de bundle (>500 kB).
 - Migraciones de 2B idénticas a `main`; no se ejecutó SQL remoto ni se desplegó. Los fixtures de pruebas solo existen en pruebas locales.
 
 La verificación acredita la implementación local. Quedan por realizar personalmente las comprobaciones de tu proyecto remoto y la autorización del proveedor descritas arriba.
+
+## Navegación administrativa y configuración de Preview
+
+El menú de usuario de escritorio y la navegación móvil incluyen «Panel de administración» únicamente tras una respuesta booleana `true` de `yoru_is_admin`. Mientras se comprueba, si la RPC falla o si cambia el usuario/token, el enlace permanece oculto. Cerrar sesión descarta la confirmación; respuestas antiguas no pueden habilitar el menú de otra cuenta. La RPC tiene timeout y se cancela al cambiar de sesión. No se usa `user_metadata`, username ni un rol persistido en el navegador. Este estado sirve para navegación; `/admin` vuelve a comprobar permisos y el Worker/RPC/RLS siguen autorizando cada operación.
+
+### Build y Runtime son configuraciones distintas
+
+| Variable | Dónde se configura | Quién la lee |
+| --- | --- | --- |
+| `VITE_SUPABASE_URL` | Workers Builds → Build variables, tanto producción como ramas no productivas | Vite al compilar; termina en el bundle público |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Workers Builds → Build variables | Vite al compilar; clave pública `sb_publishable_*` |
+| `SUPABASE_URL` | Worker → Settings → Variables & Secrets, Runtime | `env.SUPABASE_URL` en el Worker |
+| `SUPABASE_PUBLISHABLE_KEY` | Worker → Settings → Variables & Secrets, Runtime | `env.SUPABASE_PUBLISHABLE_KEY` en el Worker |
+| `ANILIST_ENABLED` | Configuración Runtime; el repositorio fija `false` | Worker; sigue requiriendo autorización PostgreSQL |
+
+Configurar solo las dos `VITE_*` permite el acceso Google y la RPC del menú, pero no configura `/api/admin/anilist`: una sesión válida obtendrá 503 «Administración no configurada» si faltan sus bindings Runtime. Añadir las dos `SUPABASE_*` como variables de Build tampoco las convierte en bindings Runtime. Usar la misma URL y clave pública para frontend y Worker de cada versión; no mezclar proyectos.
+
+`wrangler.jsonc` activa `keep_vars:true` para conservar las variables Runtime administradas en el dashboard durante las siguientes publicaciones por Wrangler. No crea variables ausentes ni convierte variables de Build. Los nombres `SUPABASE_*` se dejan fuera del repositorio; no se incluyen claves reales ni placeholders que simulen una configuración válida. `ANILIST_ENABLED=false` continúa declarado explícitamente: conservar variables no autoriza al proveedor ni activa AniList. `.dev.vars.example` sirve solo como plantilla local; `.dev.vars` está excluido y no configura Cloudflare remoto.
+
+Para la Preview de esta rama, comprobar personalmente:
+
+1. En el Worker `anime-platform`, verificar las Build variables utilizadas por el build de la rama `feat/yoru-phase-3a-anime-catalog` y, por separado, sus bindings Runtime en Settings → Variables & Secrets.
+2. Confirmar qué versión alimenta la URL Preview y que esa versión contiene ambos bindings `SUPABASE_*`. Una versión anterior puede conservar su configuración anterior: editar variables no modifica necesariamente una versión Preview ya subida. Verificarlo cuando el flujo automático de Builds genere una nueva versión, sin desplegar manualmente para esta tarea.
+3. Las versiones Preview de ramas no equivalen por sí solas a un entorno Wrangler llamado `preview`. No añadir `env.preview` ni `--env preview` sin configurar deliberadamente un Worker distinto. Si se usa un entorno nombrado, sus variables/bindings deben configurarse explícitamente allí; no asumir que hereda `vars`.
+4. Mantener `ANILIST_ENABLED=false`, aplicar previamente la migración y conceder el admin mediante SQL del propietario. Con sesión admin, Network debe mostrar `yoru_is_admin → true`, el enlace visible y `/api/admin/anilist` con `{action:'status'} → 200`, indicando integración desactivada. Sin sesión: 401; cuenta normal: 403. No publicar tokens en capturas o logs.
+5. Conservar el callback exacto de Preview documentado arriba. Si se cambia `VITE_*`, hace falta un nuevo build; cambiar solo Runtime no reescribe el bundle React.
+
+La revisión aquí cubre el código/configuración del repositorio y el comportamiento local. No hay credenciales ni conexión de administración Cloudflare para leer los bindings de tu dashboard; no se ha verificado ni modificado su configuración remota.
+
+Referencias oficiales: [Workers Builds: variables de compilación](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/), [Wrangler: `keep_vars` y variables no heredables](https://developers.cloudflare.com/workers/wrangler/configuration/), [URLs de versiones Preview](https://developers.cloudflare.com/workers/versions-and-deployments/version-urls/).
