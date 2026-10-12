@@ -1,3 +1,5 @@
+Para corregir Runtime de Production, consulta [la guía de despliegue permanente](docs/production-runtime.md). El Deploy command de Production debe ser `npm run deploy`; utiliza las variables públicas de Builds para incluir los bindings Runtime en cada publicación del mismo Worker. Preview conserva `npm run deploy:preview`.
+
 # FASE 3A · administración segura y catálogo de borradores
 
 Consulta [la guía de FASE 3A](docs/phase-3a-catalog.md) para el SQL incremental, la concesión manual de administrador, los bindings de Worker, la revisión de AniList y las pruebas. `/admin` está protegido; la maqueta pública se conserva por separado en `/demo/admin`. AniList queda desactivado hasta resolver su autorización. El catálogo público y el reproductor siguen siendo demo claramente identificada; no se publican importaciones ni se inventan episodios.
