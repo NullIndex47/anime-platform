@@ -12,12 +12,18 @@ export function databaseError(error: { code?: string } | null) {
   if (!error) return;
   throw new CatalogError(
     error.code === "23505"
-      ? "Este anime ya está importado."
+      ? "Ya existe ese origen o número en esta temporada o anime."
       : error.code === "42501"
         ? "No tienes autorización para esta operación."
-        : error.code === "23514" || error.code === "22P02"
+        : ["23514", "22P02", "22023", "22003", "23502"].includes(
+              error.code || "",
+            )
           ? "Revisa los datos de la ficha."
-          : "No se pudo completar la operación en Supabase. Puedes reintentar.",
+          : error.code === "23503" || error.code === "P0002"
+            ? "El elemento o su relación ya no existe. Recarga los datos."
+            : error.code === "PGRST202"
+              ? "Falta aplicar la migración de FASE 3B en Supabase."
+              : "No se pudo completar la operación en Supabase. Puedes reintentar.",
   );
 }
 export async function isAdministrator(signal?: AbortSignal) {

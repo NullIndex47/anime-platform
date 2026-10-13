@@ -1,3 +1,7 @@
+# FASE 3B · administración privada de temporadas y episodios
+
+Consulta [la guía de FASE 3B](docs/phase-3b-episode-management.md) para crear animes locales, aplicar la migración incremental manualmente y comprobar Cloudflare Preview. No se publica contenido real.
+
 Para corregir Runtime de Production, consulta [la guía de despliegue permanente](docs/production-runtime.md). El Deploy command de Production debe ser `npm run deploy`; utiliza las variables públicas de Builds para incluir los bindings Runtime en cada publicación del mismo Worker. Preview conserva `npm run deploy:preview`.
 
 # FASE 3A · administración segura y catálogo de borradores

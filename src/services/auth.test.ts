@@ -45,3 +45,9 @@ test('OAuth denial and exchange errors remain visible', async () => {
   client.auth.exchangeCodeForSession = async () => { throw new Error('Code expired'); };
   await assert.rejects(processCallback(client, new URL('https://app/auth/callback?code=expired')), /Code expired/);
 });
+
+test('3B Preview accepts only its exact HTTPS origin', () => {
+  const preview = 'https://feat-yoru-phase-3b-episode-management-anime-platform.cuentagaming1304.workers.dev';
+  assert.equal(callbackUrl(preview), `${preview}/auth/callback`);
+  for (const candidate of [`${preview}.evil.example`, preview.replace('https:', 'http:'), `${preview}:444`, `${preview}@evil.example`]) assert.throws(() => callbackUrl(candidate));
+});
