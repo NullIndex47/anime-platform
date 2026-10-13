@@ -1,6 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
-import { Library, LockKeyhole } from "lucide-react";
+import {
+  Library,
+  LockKeyhole,
+  Download,
+  Plus,
+  Pencil,
+  Trash2,
+  Layers,
+  ChevronRight,
+} from "lucide-react";
 import { useAuth } from "../auth/session";
 import {
   anilistRequest,
@@ -86,6 +95,13 @@ export default function Admin() {
 }
 function AdminCatalog() {
   const { section = "" } = useParams();
+  const contentRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    setOrganizing(null);
+    setCreating(false);
+    setEditing(null);
+    setNotice("");
+  }, [section]);
   const [rows, setRows] = useState<CatalogRow[]>([]);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<AnimePreview[] | null>(null);
@@ -104,6 +120,13 @@ function AdminCatalog() {
   const [until, setUntil] = useState(0);
   const [clock, setClock] = useState(Date.now());
   const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    contentRef.current?.focus({ preventScroll: true });
+  }, [organizing?.id, section]);
+  useEffect(() => {
+    if (!creating && !editing)
+      contentRef.current?.focus({ preventScroll: true });
+  }, [creating, editing?.id]);
   const remaining = Math.max(0, Math.ceil((until - clock) / 1000));
   useEffect(() => {
     if (!remaining) return;
@@ -158,13 +181,13 @@ function AdminCatalog() {
       setBusy(false);
     }
   };
-  if (!["", "animes"].includes(section)) return <NotFound />;
+  if (!["", "animes", "importar"].includes(section)) return <NotFound />;
   return (
-    <div className="container page-space">
+    <div className="container page-space yoru-admin">
       <div className="page-heading">
         <span className="eyebrow">DETRÁS DE LAS HISTORIAS</span>
         <h1>
-          Catálogo real<span className="accent">.</span>
+          Tu espacio de historias<span className="accent">.</span>
         </h1>
         <p>
           Creación local, temporadas y episodios privados. Ningún título se
@@ -176,14 +199,33 @@ function AdminCatalog() {
           className="admin-nav panel"
           aria-label="Secciones de administración"
         >
-          <Link to="/admin/animes" onClick={() => setOrganizing(null)}>
-            <Library size={18} /> Animes reales
+          <Link
+            to="/admin/animes"
+            aria-current={section !== "importar" ? "page" : undefined}
+            onClick={() => {
+              setOrganizing(null);
+              setCreating(false);
+              setEditing(null);
+            }}
+          >
+            <Library size={20} aria-hidden="true" /> Mis animes
+          </Link>
+          <Link
+            to="/admin/importar"
+            aria-current={section === "importar" ? "page" : undefined}
+          >
+            <Download size={20} aria-hidden="true" /> Importar desde AniList
           </Link>
           <span className="admin-demo-label">
             <LockKeyhole size={14} /> Administración autorizada
           </span>
         </nav>
-        <section className="admin-content">
+        <section
+          className="admin-content"
+          ref={contentRef}
+          tabIndex={-1}
+          aria-label="Gestión del catálogo"
+        >
           {error && (
             <div className="panel">
               <p role="alert">{error}</p>
@@ -196,26 +238,45 @@ function AdminCatalog() {
               </button>
             </div>
           )}
-          {notice && <p role="status">{notice}</p>}
+          {notice && (
+            <p className="admin-feedback" role="status">
+              {notice}
+            </p>
+          )}
+          {notice && section === "importar" && (
+            <Link className="button button-outline" to="/admin/animes">
+              Ver mis animes <ChevronRight size={18} aria-hidden="true" />
+            </Link>
+          )}
           {remaining > 0 && (
             <p role="status">Puedes reintentar en {remaining} s.</p>
           )}
           {busy && <p role="status">Cargando…</p>}
-          <div className="panel catalog-import">
-            <h2>Crear un anime local</h2>
-            <p>Sin APIs externas. Se guardará como borrador privado.</p>
-            <button
-              className="button"
-              disabled={busy}
-              onClick={() => {
-                setCreating(true);
-                setEditing(null);
-              }}
-            >
-              Nuevo anime
-            </button>
-          </div>
-          {creating && (
+          {section !== "importar" && !organizing && (
+            <>
+              <div className="admin-view-heading">
+                <div>
+                  <span className="eyebrow">CATÁLOGO PRIVADO</span>
+                  <h2>Mis animes</h2>
+                  <p>
+                    {rows.length} {rows.length === 1 ? "anime" : "animes"} ·
+                    Borradores y contenido preparado
+                  </p>
+                </div>
+                <button
+                  className="button"
+                  disabled={busy}
+                  onClick={() => {
+                    setCreating(true);
+                    setEditing(null);
+                  }}
+                >
+                  <Plus size={20} aria-hidden="true" /> Nuevo anime
+                </button>
+              </div>
+            </>
+          )}
+          {section !== "importar" && creating && (
             <MetadataEditor
               row={{ ...emptyMetadata, id: "new", catalog_publication: null }}
               busy={busy}
@@ -238,250 +299,281 @@ function AdminCatalog() {
               close={() => setOrganizing(null)}
             />
           )}
-          <div className="panel catalog-import">
-            <h2>Buscar en AniList</h2>
-            {providerError && (
-              <p role="status">
-                {providerError}{" "}
-                <button
-                  className="text-button"
-                  disabled={busy}
-                  onClick={() => setRetry((v) => v + 1)}
-                >
-                  Reintentar estado
-                </button>
-              </p>
-            )}
-            {permissions && !permissions.enabled && (
-              <p className="demo-notice">
-                Integración desactivada: pendiente de autorización de AniList.
-                El propietario debe resolver el permiso de metadatos e imágenes
-                antes de activarla.
-              </p>
-            )}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                setSelected(null);
-                void run(async () => {
-                  const data = await searchAniList(query);
-                  setResults(data.items);
-                });
-              }}
-            >
-              <label htmlFor="anime-search">Título del anime</label>
-              <input
-                id="anime-search"
-                value={query}
-                maxLength={100}
-                minLength={2}
-                required
-                onChange={(e) => setQuery(e.target.value)}
-              />
-              <button
-                className="button"
-                disabled={!permissions?.enabled || busy || remaining > 0}
-              >
-                Buscar
-              </button>
-            </form>
-            {results?.length === 0 && (
-              <p role="status">No se encontraron animes. Prueba otro título.</p>
-            )}
-            <div className="import-results">
-              {results?.map((item) => (
-                <button
-                  className="panel import-result"
-                  key={item.external_id}
-                  disabled={busy || remaining > 0}
-                  onClick={() =>
-                    void run(async () => {
-                      const data = await anilistRequest<{
-                        items: AnimePreview[];
-                      }>({ action: "preview", id: item.external_id });
-                      setSelected(data.items[0]);
-                    })
-                  }
-                >
-                  {item.cover_url && (
+          {section === "importar" && (
+            <>
+              <div className="panel catalog-import">
+                <span className="eyebrow">AMPLÍA TUS HISTORIAS</span>
+                <h2>Importar desde AniList</h2>
+                {providerError && (
+                  <p role="status">
+                    {providerError}{" "}
+                    <button
+                      className="button button-outline"
+                      disabled={busy}
+                      onClick={() => setRetry((v) => v + 1)}
+                    >
+                      Reintentar estado
+                    </button>
+                  </p>
+                )}
+                {permissions && !permissions.enabled && (
+                  <p className="demo-notice">
+                    <LockKeyhole size={24} aria-hidden="true" />
+                    <strong>Pendiente de autorización</strong>
+                    <span>
+                      Integración desactivada. La importación estará disponible
+                      cuando se autoricen los metadatos e imágenes de AniList.
+                      Puedes seguir creando animes locales en Mis animes.
+                    </span>
+                  </p>
+                )}
+                {permissions?.enabled && (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      setSelected(null);
+                      void run(async () => {
+                        const data = await searchAniList(query);
+                        setResults(data.items);
+                      });
+                    }}
+                  >
+                    <label htmlFor="anime-search">Título del anime</label>
+                    <input
+                      id="anime-search"
+                      value={query}
+                      maxLength={100}
+                      minLength={2}
+                      required
+                      onChange={(e) => setQuery(e.target.value)}
+                    />
+                    <button
+                      className="button"
+                      disabled={!permissions?.enabled || busy || remaining > 0}
+                    >
+                      Buscar
+                    </button>
+                  </form>
+                )}
+                {permissions?.enabled && results?.length === 0 && (
+                  <p role="status">
+                    No se encontraron animes. Prueba otro título.
+                  </p>
+                )}
+                <div className="import-results">
+                  {(permissions?.enabled ? results : null)?.map((item) => (
+                    <button
+                      className="panel import-result"
+                      key={item.external_id}
+                      disabled={busy || remaining > 0}
+                      onClick={() =>
+                        void run(async () => {
+                          const data = await anilistRequest<{
+                            items: AnimePreview[];
+                          }>({ action: "preview", id: item.external_id });
+                          setSelected(data.items[0]);
+                        })
+                      }
+                    >
+                      {item.cover_url && (
+                        <img
+                          src={item.cover_url}
+                          alt=""
+                          referrerPolicy="no-referrer"
+                        />
+                      )}
+                      <strong>{item.title}</strong>
+                      <span>
+                        {item.year ?? "Año desconocido"} ·{" "}
+                        {item.format ?? "Formato desconocido"}
+                      </span>
+                      <small>Previsualizar · AniList {item.external_id}</small>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {permissions?.enabled && selected && (
+                <article className="panel catalog-import">
+                  {selected.banner_url && (
                     <img
-                      src={item.cover_url}
+                      className="import-banner"
+                      src={selected.banner_url}
                       alt=""
                       referrerPolicy="no-referrer"
                     />
                   )}
-                  <strong>{item.title}</strong>
-                  <span>
-                    {item.year ?? "Año desconocido"} ·{" "}
-                    {item.format ?? "Formato desconocido"}
-                  </span>
-                  <small>Previsualizar · AniList {item.external_id}</small>
-                </button>
-              ))}
-            </div>
-          </div>
-          {selected && (
-            <article className="panel catalog-import">
-              {selected.banner_url && (
-                <img
-                  className="import-banner"
-                  src={selected.banner_url}
-                  alt=""
-                  referrerPolicy="no-referrer"
-                />
+                  <h2>{selected.title}</h2>
+                  <p>
+                    {[selected.title_english, selected.title_native]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                  <p>{selected.synopsis || "Sin sinopsis disponible."}</p>
+                  <dl className="import-metadata">
+                    {[
+                      ["Géneros", selected.genres.join(", ")],
+                      ["Año", selected.year],
+                      ["Formato", selected.format],
+                      ["Estado", selected.airing_status],
+                      ["Puntuación / 100", selected.score],
+                      ["Estudio", selected.studio],
+                      ["Episodios totales", selected.total_episodes],
+                    ].map(([label, value]) => (
+                      <div key={label}>
+                        <dt>{label}</dt>
+                        <dd>{value ?? "No disponible"}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p>
+                    Metadatos:{" "}
+                    <a
+                      className="text-link"
+                      href={selected.source_url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      AniList · {selected.external_id}
+                    </a>
+                    . Sin vídeos ni enlaces de reproducción.
+                  </p>
+                  {!permissions?.images && (
+                    <p>Imágenes ocultas hasta resolver sus permisos.</p>
+                  )}
+                  <button
+                    className="button"
+                    disabled={
+                      busy ||
+                      remaining > 0 ||
+                      rows.some(
+                        (r) =>
+                          r.catalog_origins?.external_id ===
+                          selected.external_id,
+                      )
+                    }
+                    onClick={() =>
+                      void run(async () => {
+                        await anilistRequest({
+                          action: "import",
+                          id: selected.external_id,
+                        });
+                        setRows(await listDrafts());
+                        setNotice("Anime importado como borrador privado.");
+                        setSelected(null);
+                      })
+                    }
+                  >
+                    Importar como borrador
+                  </button>
+                </article>
               )}
-              <h2>{selected.title}</h2>
-              <p>
-                {[selected.title_english, selected.title_native]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-              <p>{selected.synopsis || "Sin sinopsis disponible."}</p>
-              <dl className="import-metadata">
-                {[
-                  ["Géneros", selected.genres.join(", ")],
-                  ["Año", selected.year],
-                  ["Formato", selected.format],
-                  ["Estado", selected.airing_status],
-                  ["Puntuación / 100", selected.score],
-                  ["Estudio", selected.studio],
-                  ["Episodios totales", selected.total_episodes],
-                ].map(([label, value]) => (
-                  <div key={label}>
-                    <dt>{label}</dt>
-                    <dd>{value ?? "No disponible"}</dd>
-                  </div>
-                ))}
-              </dl>
-              <p>
-                Metadatos:{" "}
-                <a
-                  className="text-link"
-                  href={selected.source_url}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  AniList · {selected.external_id}
-                </a>
-                . Sin vídeos ni enlaces de reproducción.
-              </p>
-              {!permissions?.images && (
-                <p>Imágenes ocultas hasta resolver sus permisos.</p>
-              )}
-              <button
-                className="button"
-                disabled={
-                  busy ||
-                  remaining > 0 ||
-                  rows.some(
-                    (r) =>
-                      r.catalog_origins?.external_id === selected.external_id,
-                  )
-                }
-                onClick={() =>
-                  void run(async () => {
-                    await anilistRequest({
-                      action: "import",
-                      id: selected.external_id,
-                    });
-                    setRows(await listDrafts());
-                    setNotice("Anime importado como borrador privado.");
-                    setSelected(null);
-                  })
-                }
-              >
-                Importar como borrador
-              </button>
-            </article>
+            </>
           )}
-          <div className="panel table-container">
-            <table>
-              <caption>
-                Animes persistentes · hasta 100 fichas recientes
-              </caption>
-              <thead>
-                <tr>
-                  <th>Anime</th>
-                  <th>Publicación</th>
-                  <th>Origen</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.title}</td>
-                    <td>
-                      {row.catalog_publication?.state === "draft"
-                        ? "Borrador"
-                        : "Publicado"}
-                    </td>
-                    <td>
-                      {row.catalog_origins ? (
-                        <a
-                          className="text-link"
-                          href={row.catalog_origins.source_url}
-                        >
-                          AniList {row.catalog_origins.external_id}
-                        </a>
-                      ) : (
-                        "Local"
-                      )}
-                    </td>
-                    <td>
-                      <button
-                        className="text-button"
-                        disabled={busy}
-                        onClick={() => setOrganizing(row)}
-                      >
-                        Temporadas y episodios
-                      </button>
-                      <button
-                        className="text-button"
-                        disabled={
-                          busy ||
-                          (!!row.catalog_origins && !permissions?.enabled)
-                        }
-                        onClick={() => {
-                          setEditing(row);
-                          setCreating(false);
-                        }}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="text-button"
-                        disabled={busy}
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              `¿Eliminar «${row.title}» y todas sus temporadas y episodios? Esta acción no se puede deshacer.`,
-                            )
-                          )
-                            void run(async () => {
-                              await deleteAnime(row.id);
-                              if (organizing?.id === row.id)
-                                setOrganizing(null);
-                              if (editing?.id === row.id) setEditing(null);
-                              setRows(await listDrafts());
-                              setNotice("Anime eliminado.");
-                            });
-                        }}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
+          {section !== "importar" && !organizing && !creating && !editing && (
+            <div className="panel table-container admin-anime-list">
+              <table>
+                <caption>
+                  Animes persistentes · hasta 100 fichas recientes
+                </caption>
+                <thead>
+                  <tr>
+                    <th>Anime</th>
+                    <th>Publicación</th>
+                    <th>Origen</th>
+                    <th>Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {!busy && rows.length === 0 && (
-              <p className="catalog-import">
-                Todavía no hay animes reales importados.
-              </p>
-            )}
-          </div>
-          {editing && (
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.id}>
+                      <td data-label="Anime">
+                        <strong>{row.title}</strong>
+                      </td>
+                      <td>
+                        <span className="admin-cell-label" aria-hidden="true">
+                          Estado
+                        </span>
+                        <span
+                          className={`admin-badge ${row.catalog_publication?.state === "published" ? "is-ready" : "is-draft"}`}
+                        >
+                          {row.catalog_publication?.state === "draft"
+                            ? "Borrador"
+                            : "Publicado"}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="admin-cell-label" aria-hidden="true">
+                          Origen
+                        </span>
+                        {row.catalog_origins ? (
+                          <a
+                            className="text-link"
+                            href={row.catalog_origins.source_url}
+                          >
+                            AniList {row.catalog_origins.external_id}
+                          </a>
+                        ) : (
+                          <span className="admin-badge">Local</span>
+                        )}
+                      </td>
+                      <td>
+                        <div className="management-actions">
+                          <button
+                            className="button admin-primary"
+                            disabled={busy}
+                            onClick={() => {
+                              setOrganizing(row);
+                              setNotice("");
+                            }}
+                          >
+                            <Layers size={18} aria-hidden="true" /> Temporadas y
+                            episodios
+                          </button>
+                          <button
+                            className="button button-outline"
+                            disabled={
+                              busy ||
+                              (!!row.catalog_origins && !permissions?.enabled)
+                            }
+                            onClick={() => {
+                              setEditing(row);
+                              setCreating(false);
+                            }}
+                          >
+                            <Pencil size={18} aria-hidden="true" /> Editar
+                          </button>
+                          <button
+                            className="button admin-danger"
+                            disabled={busy}
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `¿Eliminar «${row.title}» y todas sus temporadas y episodios? Esta acción no se puede deshacer.`,
+                                )
+                              )
+                                void run(async () => {
+                                  await deleteAnime(row.id);
+                                  setRows(await listDrafts());
+                                  setNotice("Anime eliminado.");
+                                });
+                            }}
+                          >
+                            <Trash2 size={18} aria-hidden="true" /> Eliminar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!busy && rows.length === 0 && (
+                <p className="catalog-import">
+                  Todavía no hay animes reales importados.
+                </p>
+              )}
+            </div>
+          )}
+          {section !== "importar" && editing && (
             <MetadataEditor
               key={editing.id}
               row={editing}
@@ -563,6 +655,7 @@ function MetadataEditor({
         <label key={key}>
           {label}
           <input
+            autoFocus={key === "title"}
             value={String(data[key] ?? "")}
             required={key === "title"}
             maxLength={max}
@@ -649,7 +742,7 @@ function MetadataEditor({
       </button>
       <button
         type="button"
-        className="text-button"
+        className="button button-outline"
         disabled={busy}
         onClick={cancel}
       >

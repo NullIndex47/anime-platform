@@ -110,7 +110,7 @@ test("Admin link is absent while checking, then appears only after boolean true 
   await link.click();
   await expect(page).toHaveURL(/\/admin$/);
   await expect(
-    page.getByRole("heading", { name: "Catálogo real." }),
+    page.getByRole("heading", { name: "Tu espacio de historias." }),
   ).toBeVisible();
 });
 test("Normal users, forged metadata, incomplete replies and RPC errors never reveal the link", async ({

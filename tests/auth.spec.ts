@@ -65,6 +65,7 @@ test('Failed remote signout clears local session and preserves the error', async
   await expect(page).toHaveURL(/\/iniciar-sesion$/);
 });
 for (const preview of [
+  'https://feat-yoru-admin-ux-improvements-anime-platform.cuentagaming1304.workers.dev',
   'https://feat-yoru-phase-3b-episode-management-anime-platform.cuentagaming1304.workers.dev',
   'https://feat-yoru-phase-2a-supabase-auth-anime-platform.cuentagaming1304.workers.dev',
   'https://feat-yoru-phase-2b-profiles-anime-platform.cuentagaming1304.workers.dev',
