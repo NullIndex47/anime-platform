@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link, useParams } from "react-router";
 import { ArrowLeft, ChevronLeft, ChevronRight, ListVideo } from "lucide-react";
 import { catalogService } from "../services/catalog";
@@ -9,12 +10,18 @@ export default function Episode() {
   const anime = catalogService.find(animeId);
   const number = Number(episodeNumber);
   const episode = anime?.episodes.find((item) => item.number === number);
+  useEffect(() => {
+    document.title =
+      anime && episode
+        ? `${anime.title} · Episodio ${episode.number}: ${episode.title} — YORU`
+        : "YORU — Descubre otro mundo";
+  }, [anime?.id, episode?.id]);
   if (!anime || !episode || !Number.isInteger(number)) return <NotFound />;
   const prev = anime.episodes.find((item) => item.number === number - 1);
   const next = anime.episodes.find((item) => item.number === number + 1);
   return (
     <div className="container page-space watch-page">
-      <Link className="back-link" to={`/anime/${anime.id}`}>
+      <Link className="back-link" to={`/demo/anime/${anime.id}`}>
         <ArrowLeft size={15} /> {anime.title}
       </Link>
       <div className="watch-heading">
@@ -34,7 +41,7 @@ export default function Episode() {
         {prev ? (
           <Link
             className="button button-outline"
-            to={`/anime/${anime.id}/episodio/${prev.number}`}
+            to={`/demo/anime/${anime.id}/episodio/${prev.number}`}
           >
             <ChevronLeft size={17} />
             <span>Anterior</span>
@@ -44,14 +51,14 @@ export default function Episode() {
             <ChevronLeft size={17} /> Anterior
           </button>
         )}
-        <Link className="button button-ghost" to={`/anime/${anime.id}`}>
+        <Link className="button button-ghost" to={`/demo/anime/${anime.id}`}>
           <ListVideo size={18} />
           <span>Todos los episodios</span>
         </Link>
         {next ? (
           <Link
             className="button button-outline"
-            to={`/anime/${anime.id}/episodio/${next.number}`}
+            to={`/demo/anime/${anime.id}/episodio/${next.number}`}
           >
             <span>Siguiente</span>
             <ChevronRight size={17} />

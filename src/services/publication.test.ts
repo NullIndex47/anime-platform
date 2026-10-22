@@ -6,7 +6,7 @@ import { MemoryRouter, Route, Routes } from "react-router";
 import { anime } from "../data/anime";
 import { catalogService, defaultFilters, filterAnime } from "./catalog";
 import { adminCatalogService } from "./admin";
-import AnimeDetail from "../pages/AnimeDetail";
+import AnimeDetail from "../pages/DemoAnimeDetail";
 import Episode from "../pages/Episode";
 import Admin from "../pages/AdminDemo";
 
@@ -19,11 +19,11 @@ const renderRoute = (path: string) =>
         Routes,
         null,
         createElement(Route, {
-          path: "/anime/:animeId",
+          path: "/demo/anime/:animeId",
           element: createElement(AnimeDetail),
         }),
         createElement(Route, {
-          path: "/anime/:animeId/episodio/:episodeNumber",
+          path: "/demo/anime/:animeId/episodio/:episodeNumber",
           element: createElement(Episode),
         }),
         createElement(Route, {
@@ -107,8 +107,8 @@ test("todas las consultas públicas respetan la publicación al retirar o añadi
 
 test("las URLs públicas de un anime sin publicar muestran 404 sin revelar su ficha", () => {
   for (const path of [
-    "/anime/jardin-de-invierno",
-    "/anime/jardin-de-invierno/episodio/1",
+    "/demo/anime/jardin-de-invierno",
+    "/demo/anime/jardin-de-invierno/episodio/1",
   ]) {
     const markup = renderRoute(path);
     assert.match(markup, /Esta historia aún no existe/);
@@ -118,9 +118,9 @@ test("las URLs públicas de un anime sin publicar muestran 404 sin revelar su fi
 });
 
 test("las fichas y episodios publicados siguen accesibles", () => {
-  assert.match(renderRoute("/anime/el-viaje-de-aoi"), /El viaje de Aoi/);
+  assert.match(renderRoute("/demo/anime/el-viaje-de-aoi"), /El viaje de Aoi/);
   assert.match(
-    renderRoute("/anime/el-viaje-de-aoi/episodio/1"),
+    renderRoute("/demo/anime/el-viaje-de-aoi/episodio/1"),
     /El tren de las seis/,
   );
 });
@@ -128,6 +128,6 @@ test("las fichas y episodios publicados siguen accesibles", () => {
 test("la administración conserva el borrador sin enlazar a una ficha pública inexistente", () => {
   const markup = renderRoute("/admin/animes");
   assert.match(markup, /Jardín de invierno/);
-  assert.doesNotMatch(markup, /href="\/anime\/jardin-de-invierno"/);
-  assert.match(markup, /href="\/anime\/el-viaje-de-aoi"/);
+  assert.doesNotMatch(markup, /href="\/demo\/anime\/jardin-de-invierno"/);
+  assert.match(markup, /href="\/demo\/anime\/el-viaje-de-aoi"/);
 });

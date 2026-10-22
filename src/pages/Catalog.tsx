@@ -1,60 +1,83 @@
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
-import { Search, SlidersHorizontal, RotateCcw, SearchX } from "lucide-react";
-import { AnimeCard } from "../components/AnimeCard";
+import { Search, SlidersHorizontal } from "lucide-react";
+import { usePublicCatalog } from "../catalog/usePublicCatalog";
+import { requireClient } from "../auth/session";
 import {
-  catalogService,
-  defaultFilters,
-  filterAnime,
-} from "../services/catalog";
-import type { CatalogFilters } from "../types/anime";
+  formatLabels,
+  statusLabels,
+  loadCatalogFacets,
+  parsePublicFilters,
+} from "../services/persistent-catalog";
+import { PublicAnimeCard, CatalogState } from "../components/PublicAnimeCard";
 export default function Catalog() {
   const [params, setParams] = useSearchParams();
-  const filters: CatalogFilters = {
-    query: params.get("q") ?? "",
-    genre: params.get("genre") ?? "",
-    year: params.get("year") ?? "",
-    status: params.get("status") ?? "",
-    format: params.get("format") ?? "",
-    sort: params.get("sort") ?? "popular",
-  };
+  const filters = parsePublicFilters(params);
+  const rawPage = Number(params.get("page") || 1);
+  const page =
+    Number.isInteger(rawPage) && rawPage > 0 && rawPage <= 4167
+      ? rawPage - 1
+      : 0;
+  const catalog = usePublicCatalog(filters, page);
+  const [facets, setFacets] = useState<{ genres: string[]; years: number[] }>({
+    genres: [],
+    years: [],
+  });
+  const [facetError, setFacetError] = useState(false);
+  const [facetRetry, setFacetRetry] = useState(0);
+  useEffect(() => {
+    const c = new AbortController();
+    Promise.resolve()
+      .then(() =>
+        loadCatalogFacets(
+          requireClient(),
+          AbortSignal.any([c.signal, AbortSignal.timeout(15000)]),
+        ),
+      )
+      .then((data) => {
+        if (!c.signal.aborted) {
+          setFacets(data);
+          setFacetError(false);
+        }
+      })
+      .catch(() => {
+        if (!c.signal.aborted) setFacetError(true);
+      });
+    return () => c.abort();
+  }, [facetRetry]);
   const update = (key: string, value: string) =>
     setParams(
       (prev) => {
         const next = new URLSearchParams(prev);
+        next.delete("page");
         value ? next.set(key, value) : next.delete(key);
         return next;
       },
       { replace: true },
     );
-  const results = filterAnime(catalogService.list(), filters);
-  const active = Object.entries(filters).some(
-    ([key, value]) => value !== defaultFilters[key as keyof CatalogFilters],
-  );
   const fields = [
     {
       key: "genre",
       label: "Género",
-      placeholder: "Todos los géneros",
-      options: catalogService.genres(),
+      values: [
+        ...new Set([
+          ...facets.genres,
+          ...(filters.genre ? [filters.genre] : []),
+        ]),
+      ].map((v) => [v, v]),
     },
     {
       key: "year",
       label: "Año",
-      placeholder: "Cualquier año",
-      options: ["2027", "2026", "2025", "2024"],
+      values: [
+        ...new Set([
+          ...facets.years.map(String),
+          ...(filters.year ? [filters.year] : []),
+        ]),
+      ].map((v) => [v, v]),
     },
-    {
-      key: "status",
-      label: "Estado",
-      placeholder: "Todos los estados",
-      options: ["En emisión", "Finalizado", "Próximamente"],
-    },
-    {
-      key: "format",
-      label: "Formato",
-      placeholder: "Todos los formatos",
-      options: ["Serie", "Película", "OVA"],
-    },
+    { key: "status", label: "Estado", values: Object.entries(statusLabels) },
+    { key: "format", label: "Formato", values: Object.entries(formatLabels) },
   ];
   return (
     <div className="container page-space">
@@ -63,20 +86,17 @@ export default function Catalog() {
         <h1>
           Un universo por explorar<span className="accent">.</span>
         </h1>
-        <p>
-          De aventuras inolvidables a pequeños momentos. Elige por dónde
-          empezar.
-        </p>
+        <p>Historias publicadas en YORU. Encuentra la tuya.</p>
       </div>
       <div className="catalog-search">
         <Search size={21} />
         <input
           aria-label="Buscar en el catálogo"
+          maxLength={100}
+          placeholder="Busca un título o género…"
           value={filters.query}
-          placeholder="Un título, un género, una nueva obsesión…"
           onChange={(e) => update("q", e.target.value)}
         />
-        <span>{catalogService.list().length} historias</span>
       </div>
       <div className="catalog-layout">
         <aside className="filters panel">
@@ -90,41 +110,48 @@ export default function Catalog() {
               {field.label}
               <select
                 aria-label={field.label}
-                value={filters[field.key as keyof CatalogFilters]}
+                value={filters[field.key as keyof typeof filters]}
                 onChange={(e) => update(field.key, e.target.value)}
               >
-                <option value="">{field.placeholder}</option>
-                {field.options.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
+                <option value="">Todos</option>
+                {field.values.map(([v, label]) => (
+                  <option key={v} value={v}>
+                    {label}
                   </option>
                 ))}
               </select>
             </label>
           ))}
-          <button
-            className="reset-filters"
-            onClick={() => setParams({})}
-            disabled={!active}
-          >
-            <RotateCcw size={15} /> Restablecer filtros
+          <button className="reset-filters" onClick={() => setParams({})}>
+            Restablecer filtros
           </button>
+          {facetError && (
+            <p role="status">
+              No se pudieron cargar las opciones.{" "}
+              <button
+                className="text-link"
+                onClick={() => setFacetRetry((v) => v + 1)}
+              >
+                Reintentar filtros
+              </button>
+            </p>
+          )}
           <p className="filter-note">
-            Catálogo de demostración.
-            <br />
-            Todas las historias son ficticias.
+            Una ficha puede estar publicada antes de disponer de episodios
+            reproducibles.
           </p>
         </aside>
         <section
           className="catalog-results"
           aria-label="Resultados del catálogo"
+          aria-busy={catalog.loading}
         >
           <div className="results-toolbar">
             <p aria-live="polite">
-              <strong>{results.length}</strong>{" "}
-              {results.length === 1
-                ? "historia encontrada"
-                : "historias encontradas"}
+              Página {page + 1}
+              {!catalog.loading && !catalog.error
+                ? ` · ${catalog.items.length} historias`
+                : ""}
             </p>
             <label>
               <span className="sr-only">Ordenar resultados</span>
@@ -132,30 +159,70 @@ export default function Catalog() {
                 value={filters.sort}
                 onChange={(e) => update("sort", e.target.value)}
               >
+                <option value="recent">Más recientes por año</option>
                 <option value="popular">Mejor valorados</option>
-                <option value="recent">Más recientes</option>
                 <option value="az">Título: A–Z</option>
               </select>
             </label>
           </div>
-          {results.length ? (
-            <div className="anime-grid catalog-grid">
-              {results.map((item) => (
-                <AnimeCard anime={item} key={item.id} />
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state">
-              <SearchX size={40} />
-              <h2>No hay historias con estos filtros</h2>
-              <p>Prueba otro título o amplía tu búsqueda.</p>
-              <button
-                className="button button-outline"
-                onClick={() => setParams({})}
+          <CatalogState {...catalog} />
+          {!catalog.loading && !catalog.error && (
+            <>
+              {catalog.items.length ? (
+                <div className="anime-grid catalog-grid">
+                  {catalog.items.map((anime) => (
+                    <PublicAnimeCard key={anime.id} anime={anime} />
+                  ))}
+                </div>
+              ) : (
+                <div className="panel empty-state">
+                  <h2>
+                    {Object.values(filters).some((v, i) => i !== 5 && v)
+                      ? "No hay historias con estos filtros"
+                      : "El catálogo está preparando sus primeras historias"}
+                  </h2>
+                  <p>Prueba otra búsqueda o vuelve pronto.</p>
+                  <button
+                    className="button button-outline"
+                    onClick={() => setParams({})}
+                  >
+                    Limpiar filtros
+                  </button>
+                </div>
+              )}
+              <nav
+                className="public-pagination"
+                aria-label="Páginas del catálogo"
               >
-                Limpiar filtros
-              </button>
-            </div>
+                <button
+                  className="button button-outline"
+                  disabled={page === 0}
+                  onClick={() =>
+                    setParams((prev) => {
+                      const n = new URLSearchParams(prev);
+                      n.set("page", String(page));
+                      return n;
+                    })
+                  }
+                >
+                  Anterior
+                </button>
+                <span>Página {page + 1}</span>
+                <button
+                  className="button button-outline"
+                  disabled={!catalog.hasMore || page >= 4166}
+                  onClick={() =>
+                    setParams((prev) => {
+                      const n = new URLSearchParams(prev);
+                      n.set("page", String(page + 2));
+                      return n;
+                    })
+                  }
+                >
+                  Siguiente
+                </button>
+              </nav>
+            </>
           )}
         </section>
       </div>

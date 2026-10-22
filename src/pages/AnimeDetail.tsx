@@ -1,58 +1,107 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
+import { ArrowLeft } from "lucide-react";
+import { requireClient } from "../auth/session";
 import {
-  ArrowLeft,
-  Play,
-  Star,
-  ChevronRight,
-  ListVideo,
-  Bookmark,
-} from "lucide-react";
-import { catalogService, formatDate } from "../services/catalog";
-import { Comments } from "../components/Comments";
-import { DemoNotice } from "../components/DemoNotice";
+  loadPublicAnime,
+  formatLabels,
+  statusLabels,
+  type PublicAnime,
+} from "../services/persistent-catalog";
+import { CatalogState } from "../components/PublicAnimeCard";
 import NotFound from "./NotFound";
 export default function AnimeDetail() {
-  const { animeId } = useParams();
-  const anime = catalogService.find(animeId);
-  const [descending, setDescending] = useState(false);
+  const { animeId = "" } = useParams();
+  const [retry, setRetry] = useState(0);
+  const [state, setState] = useState<{
+    id: string;
+    anime: PublicAnime | null;
+    loading: boolean;
+    error: string;
+  }>({ id: "", anime: null, loading: true, error: "" });
+  useEffect(() => {
+    const c = new AbortController();
+    setState({ id: animeId, anime: null, loading: true, error: "" });
+    Promise.resolve()
+      .then(() =>
+        loadPublicAnime(
+          requireClient(),
+          animeId,
+          AbortSignal.any([c.signal, AbortSignal.timeout(15000)]),
+        ),
+      )
+      .then((anime) => {
+        if (!c.signal.aborted)
+          setState({ id: animeId, anime, loading: false, error: "" });
+      })
+      .catch(() => {
+        if (!c.signal.aborted)
+          setState({
+            id: animeId,
+            anime: null,
+            loading: false,
+            error: "No se pudo cargar la ficha. Puedes reintentar.",
+          });
+      });
+    return () => c.abort();
+  }, [animeId, retry]);
+  useEffect(() => {
+    if (state.id === animeId && state.anime)
+      document.title = `${state.anime.title} — YORU`;
+  }, [state, animeId]);
+  if (state.id !== animeId || state.loading || state.error)
+    return (
+      <div className="container page-space">
+        <CatalogState
+          loading={state.id !== animeId || state.loading}
+          error={state.error}
+          retry={() => setRetry((v) => v + 1)}
+        />
+      </div>
+    );
+  const anime = state.anime;
   if (!anime) return <NotFound />;
-  const episodes = descending ? [...anime.episodes].reverse() : anime.episodes;
   return (
     <div className="container page-space">
       <Link className="back-link" to="/catalogo">
-        <ArrowLeft size={15} /> Volver a explorar
+        <ArrowLeft size={16} /> Volver a explorar
       </Link>
       <section className="detail-hero">
         <div className="detail-art">
           <img
-            src={anime.artwork}
-            alt={`Ilustración original de ${anime.title}`}
+            src="/artwork/catalog-placeholder.svg"
+            alt="Ilustración provisional original de YORU"
+            width="600"
+            height="850"
           />
           <div className="detail-art-title">
-            <span>YORU ORIGINAL</span>
+            <span>CATÁLOGO YORU</span>
             <strong>{anime.title}</strong>
           </div>
         </div>
         <div className="detail-copy">
           <span className="eyebrow">
-            {anime.status === "En emisión" && <span className="live-dot" />}{" "}
-            {anime.status.toUpperCase()} · {anime.format.toUpperCase()}
+            {statusLabels[anime.airing_status || ""] || "Información"} ·{" "}
+            {formatLabels[anime.format || ""] || "Formato pendiente"}
           </span>
           <h1>
             {anime.title}
             <span className="accent">.</span>
           </h1>
-          <p className="detail-subtitle">{anime.subtitle}</p>
+          <p className="detail-subtitle">
+            {[anime.title_romaji, anime.title_english, anime.title_native]
+              .filter((v, i, a) => v && v !== anime.title && a.indexOf(v) === i)
+              .join(" · ")}
+          </p>
           <div className="detail-meta">
-            <span className="rating">
-              <Star size={17} fill="currentColor" />{" "}
-              {anime.rating ? anime.rating.toFixed(1) : "Sin valoración"}
-            </span>
-            <span>{anime.year}</span>
+            <span>{anime.year ?? "Año pendiente"}</span>
             <span>
-              {anime.totalEpisodes}{" "}
-              {anime.format === "Película" ? "película" : "episodios previstos"}
+              {anime.score !== null ? `${anime.score}/100` : "Sin valoración"}
+            </span>
+            <span>
+              {anime.total_episodes !== null
+                ? `${anime.total_episodes} episodios previstos`
+                : "Episodios por confirmar"}
             </span>
           </div>
           <div className="genre-tags">
@@ -66,93 +115,24 @@ export default function AnimeDetail() {
             ))}
           </div>
           <h2 className="synopsis-label">La historia</h2>
-          <p className="synopsis">{anime.description}</p>
+          <p className="synopsis public-synopsis">
+            {anime.synopsis || "La sinopsis estará disponible próximamente."}
+          </p>
           <dl className="studio-info">
             <dt>Estudio</dt>
-            <dd>{anime.studio}</dd>
-            <dt>Disponibles</dt>
-            <dd>
-              {anime.episodes.length} de {anime.totalEpisodes}
-            </dd>
+            <dd>{anime.studio || "Por confirmar"}</dd>
           </dl>
-          <div className="detail-actions">
-            {anime.episodes.length ? (
-              <Link className="button" to={`/anime/${anime.id}/episodio/1`}>
-                <Play size={16} fill="currentColor" /> Probar episodio demo
-              </Link>
-            ) : (
-              <button className="button" disabled>
-                Próximamente
-              </button>
-            )}
-            <button
-              className="button button-outline"
-              disabled
-              title="Disponible cuando se integre la cuenta de usuario"
-            >
-              <Bookmark size={16} /> Guardar · próximamente
-            </button>
-          </div>
         </div>
       </section>
-      <DemoNotice>
-        Historia ficticia creada para esta demostración. Los episodios muestran
-        el mismo clip original de prueba; no contienen capítulos de anime
-        comercial.
-      </DemoNotice>
-      <section className="episode-list-section panel">
-        <div className="section-heading">
-          <div>
-            <span className="eyebrow">PASO A PASO, OTRA HISTORIA</span>
-            <h2>
-              <ListVideo size={22} /> Episodios{" "}
-              <span className="count-badge">{anime.episodes.length}</span>
-            </h2>
-          </div>
-          {episodes.length > 1 && (
-            <label>
-              <span className="sr-only">Orden de los episodios</span>
-              <select
-                value={descending ? "desc" : "asc"}
-                onChange={(e) => setDescending(e.target.value === "desc")}
-              >
-                <option value="asc">Primero el más antiguo</option>
-                <option value="desc">Primero el más reciente</option>
-              </select>
-            </label>
-          )}
-        </div>
-        {episodes.length ? (
-          <div className="episode-rows">
-            {episodes.map((episode) => (
-              <Link
-                className="episode-row"
-                key={episode.id}
-                to={`/anime/${anime.id}/episodio/${episode.number}`}
-              >
-                <span className="episode-row-number">
-                  {String(episode.number).padStart(2, "0")}
-                </span>
-                <img src={anime.artwork} alt="" />
-                <div>
-                  <span>Episodio {episode.number}</span>
-                  <h3>{episode.title}</h3>
-                </div>
-                <span className="episode-row-date">
-                  {formatDate(episode.releasedAt)}
-                </span>
-                <span className="episode-row-duration">{episode.duration}</span>
-                <ChevronRight size={19} />
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="empty-state">
-            <p>Todavía no hay episodios publicados para esta historia.</p>
-          </div>
-        )}
+      <section className="panel public-availability">
+        <span className="eyebrow">DISPONIBILIDAD</span>
+        <h2>Ficha de información</h2>
+        <p>
+          {anime.playback_available
+            ? "Hay episodios preparados. La reproducción del catálogo real todavía no está disponible en YORU."
+            : "Todavía no hay episodios disponibles para reproducir."}
+        </p>
       </section>
-      <Comments animeId={anime.id} />
     </div>
   );
 }

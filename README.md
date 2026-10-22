@@ -1,3 +1,7 @@
+## FASE 3C · Catálogo público conectado a Supabase
+
+Inicio, Explorar y fichas usan metadatos publicados de Supabase; la demo está aislada en `/demo`. Antes de comprobar la Preview, aplicar manualmente la migración incremental. [Guía de migración, seguridad y Preview](docs/phase-3c-public-catalog.md). Las secciones anteriores describen las fases históricas.
+
 # FASE 3B · administración privada de temporadas y episodios
 
 Consulta [la guía de FASE 3B](docs/phase-3b-episode-management.md) para crear animes locales, aplicar la migración incremental manualmente y comprobar Cloudflare Preview. No se publica contenido real.

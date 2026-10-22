@@ -19,6 +19,7 @@ import {
   listDrafts,
   searchAniList,
   updateAnime,
+  setAnimePublication,
 } from "../services/catalog-admin";
 import type { AnimeMetadata, AnimePreview, CatalogRow } from "../types/catalog";
 import { createAnime, emptyMetadata } from "../services/episode-management";
@@ -86,7 +87,7 @@ export default function Admin() {
             </Link>
           )}
           <Link className="text-link" to="/catalogo">
-            Explorar el catálogo demo
+            Explorar el catálogo
           </Link>
         </div>
       </div>
@@ -190,8 +191,8 @@ function AdminCatalog() {
           Tu espacio de historias<span className="accent">.</span>
         </h1>
         <p>
-          Creación local, temporadas y episodios privados. Ningún título se
-          publica en esta fase.
+          Gestiona tus fichas y decide cuándo publicarlas. Publicar información
+          no habilita la reproducción de episodios.
         </p>
       </div>
       <div className="admin-layout">
@@ -256,11 +257,11 @@ function AdminCatalog() {
             <>
               <div className="admin-view-heading">
                 <div>
-                  <span className="eyebrow">CATÁLOGO PRIVADO</span>
+                  <span className="eyebrow">GESTIÓN DEL CATÁLOGO</span>
                   <h2>Mis animes</h2>
                   <p>
                     {rows.length} {rows.length === 1 ? "anime" : "animes"} ·
-                    Borradores y contenido preparado
+                    Borradores privados y fichas publicadas
                   </p>
                 </div>
                 <button
@@ -496,9 +497,9 @@ function AdminCatalog() {
                         <span
                           className={`admin-badge ${row.catalog_publication?.state === "published" ? "is-ready" : "is-draft"}`}
                         >
-                          {row.catalog_publication?.state === "draft"
-                            ? "Borrador"
-                            : "Publicado"}
+                          {row.catalog_publication?.state === "published"
+                            ? "Publicado"
+                            : "Borrador"}
                         </span>
                       </td>
                       <td>
@@ -518,6 +519,48 @@ function AdminCatalog() {
                       </td>
                       <td>
                         <div className="management-actions">
+                          <button
+                            className="button button-outline"
+                            disabled={
+                              busy ||
+                              (row.catalog_publication?.state !== "published" &&
+                                !!row.catalog_origins &&
+                                !permissions?.enabled)
+                            }
+                            onClick={() => {
+                              const publishing =
+                                row.catalog_publication?.state !== "published";
+                              if (
+                                window.confirm(
+                                  publishing
+                                    ? `¿Publicar «${row.title}»? Su información será visible para todos, aunque no tenga episodios reproducibles.`
+                                    : `¿Retirar «${row.title}»? La ficha dejará de ser accesible en el catálogo público y por enlace directo.`,
+                                )
+                              )
+                                void run(async () => {
+                                  await setAnimePublication(row.id, publishing);
+                                  setRows(await listDrafts());
+                                  setNotice(
+                                    publishing
+                                      ? "Ficha publicada en el catálogo público."
+                                      : "Ficha retirada. Ahora es un borrador privado.",
+                                  );
+                                });
+                            }}
+                          >
+                            {row.catalog_publication?.state === "published"
+                              ? "Retirar ficha"
+                              : "Publicar ficha"}
+                          </button>
+                          {row.catalog_publication?.state === "published" && (
+                            <Link
+                              className="button button-outline"
+                              to={`/anime/${row.id}`}
+                            >
+                              Ver ficha pública
+                            </Link>
+                          )}
+
                           <button
                             className="button admin-primary"
                             disabled={busy}
@@ -650,7 +693,11 @@ function MetadataEditor({
       }}
     >
       <h2>{creating ? "Nuevo anime local" : "Editar datos locales"}</h2>
-      <p>El origen permanece intacto. Guardar no publica el anime.</p>
+      <p>
+        {row.catalog_publication?.state === "published"
+          ? "Esta ficha está publicada: guardar actualiza su información pública al instante. Puedes retirarla antes de editar."
+          : "El origen permanece intacto. Guardar no publica el anime."}
+      </p>
       {fields.map(([key, label, max]) => (
         <label key={key}>
           {label}

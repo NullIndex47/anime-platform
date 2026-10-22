@@ -1,15 +1,7 @@
 import { useAdministrator } from "../admin/useAdministrator";
 import { useAuth } from "../auth/session";
 import { useEffect, useState, type FormEvent } from "react";
-import {
-  Link,
-  NavLink,
-  Outlet,
-  matchPath,
-  useLocation,
-  useNavigate,
-} from "react-router";
-import { catalogService } from "../services/catalog";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import {
   ArrowUpRight,
   Search,
@@ -45,18 +37,8 @@ export function Layout() {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [location.pathname]);
   useEffect(() => {
-    const match = matchPath(
-      "/anime/:animeId/episodio/:episodeNumber",
-      location.pathname,
-    );
-    const anime = catalogService.find(match?.params.animeId);
-    const episode = anime?.episodes.find(
-      (item) => item.number === Number(match?.params.episodeNumber),
-    );
-    document.title =
-      anime && episode
-        ? `${anime.title} · Episodio ${episode.number}: ${episode.title} — YORU`
-        : "YORU — Descubre otro mundo";
+    if (!/^\/demo\/anime\/[^/]+\/episodio\/[^/]+\/?$/.test(location.pathname))
+      document.title = "YORU — Descubre otro mundo";
   }, [location.pathname]);
   useEffect(() => {
     setUserMenu(false);
@@ -239,6 +221,7 @@ export function Layout() {
             </div>
             <div className="footer-links">
               <Link to="/catalogo">Explorar</Link>
+              <Link to="/demo">Demostración ficticia</Link>
               <Link to="/demo/admin">Panel demo</Link>
               <Link to={session ? "/cuenta" : "/iniciar-sesion"}>
                 {session ? "Mi perfil" : "Acceder con Google"}
@@ -256,7 +239,7 @@ export function Layout() {
           <div className="container footer-bottom">
             <span>© 2026 Yoru · Un universo por descubrir</span>
             <span className="demo-tag">
-              FASE 3A <span /> Catálogo público de demostración
+              YORU <span /> Catálogo público
             </span>
           </div>
         </footer>
