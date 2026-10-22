@@ -1,82 +1,120 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AnimeMetadata } from "../types/catalog";
-import { defaultFilters, normalize } from "./catalog";
-import type { CatalogFilters } from "../types/anime";
-export interface PersistentAnime extends AnimeMetadata {
+
+// Public DTO: stable UUIDs are the future relation keys for user features.
+// Never reuse administrative rows or episode payloads in public components.
+export interface PublicAnime extends AnimeMetadata {
   id: string;
-  catalog_episodes: {
-    id: string;
-    episode_number: number;
-    title: string;
-    published_at: string;
-    available: boolean;
-    authorized: boolean;
-    playback_reference: string | null;
-  }[];
+  playback_available: boolean;
 }
-export function filterPersistent(
-  items: PersistentAnime[],
-  filters: CatalogFilters = defaultFilters,
-) {
-  const formats: Record<string, string[]> = {
-    Serie: ["TV", "TV_SHORT", "ONA"],
-    Película: ["MOVIE"],
-    OVA: ["OVA"],
+export interface PublicFilters {
+  query: string;
+  genre: string;
+  year: string;
+  format: string;
+  status: string;
+  sort: string;
+}
+export const PAGE_SIZE = 24;
+export const publicColumns =
+  "id,title,title_romaji,title_english,title_native,synopsis,genres,year,format,airing_status,score,studio,total_episodes,playback_available";
+export const emptyFilters: PublicFilters = {
+  query: "",
+  genre: "",
+  year: "",
+  format: "",
+  status: "",
+  sort: "recent",
+};
+export const formatLabels: Record<string, string> = {
+  TV: "Serie",
+  TV_SHORT: "Serie corta",
+  MOVIE: "Película",
+  SPECIAL: "Especial",
+  OVA: "OVA",
+  ONA: "ONA",
+  MUSIC: "Música",
+};
+export const statusLabels: Record<string, string> = {
+  RELEASING: "En emisión",
+  FINISHED: "Finalizado",
+  NOT_YET_RELEASED: "Próximamente",
+  CANCELLED: "Cancelado",
+  HIATUS: "En pausa",
+};
+export function parsePublicFilters(params: URLSearchParams): PublicFilters {
+  const status = params.get("status") || "";
+  return {
+    query: (params.get("q") || "").slice(0, 100),
+    genre: (params.get("genre") || "").slice(0, 100),
+    year: /^\d{4}$/.test(params.get("year") || "") ? params.get("year")! : "",
+    format: params.get("format") || "",
+    status:
+      Object.keys(statusLabels).find((k) => statusLabels[k] === status) ||
+      status,
+    sort: ["recent", "az", "popular"].includes(params.get("sort") || "")
+      ? params.get("sort")!
+      : "recent",
   };
-  const states: Record<string, string[]> = {
-    "En emisión": ["RELEASING"],
-    Finalizado: ["FINISHED"],
-    Próximamente: ["NOT_YET_RELEASED"],
-  };
-  return items
-    .filter(
-      (item) =>
-        (!filters.query ||
-          normalize(
-            `${item.title} ${item.title_english || ""} ${item.title_native || ""} ${item.genres.join(" ")}`,
-          ).includes(normalize(filters.query))) &&
-        (!filters.genre || item.genres.includes(filters.genre)) &&
-        (!filters.year || item.year === Number(filters.year)) &&
-        (!filters.format ||
-          formats[filters.format]?.includes(item.format || "")) &&
-        (!filters.status ||
-          states[filters.status]?.includes(item.airing_status || "")),
-    )
-    .sort((a, b) =>
-      filters.sort === "az"
-        ? a.title.localeCompare(b.title, "es")
-        : filters.sort === "recent"
-          ? (b.year || 0) - (a.year || 0)
-          : (b.score || 0) - (a.score || 0),
-    );
 }
-export function hasAvailableEpisode(item: PersistentAnime) {
-  return item.catalog_episodes.some(
-    (e) =>
-      e.available &&
-      e.authorized &&
-      !!e.playback_reference &&
-      Date.parse(e.published_at) <= Date.now(),
-  );
+function check(error: unknown) {
+  if (error)
+    throw new Error("No se pudo cargar el catálogo. Puedes reintentar.");
 }
-// Deliberately separate from synchronous demo services. No silent fallback on errors,
-// no merging fixtures, no demo video attached to real IDs. UI adoption follows
-// authorized episode ingestion and an actual persistent playback implementation.
 export async function loadPersistentCatalog(
   client: SupabaseClient,
-  offset = 0,
-): Promise<{ source: "persistent"; items: PersistentAnime[] }> {
-  if (!Number.isInteger(offset) || offset < 0)
+  filters: PublicFilters = emptyFilters,
+  page = 0,
+  signal?: AbortSignal,
+) {
+  if (!Number.isInteger(page) || page < 0 || page * PAGE_SIZE > 100000)
     throw new Error("Página no válida.");
   const { data, error } = await client
-    .from("catalog_anime")
-    .select("*,catalog_publication!inner(state),catalog_episodes(*)")
-    .eq("catalog_publication.state", "published")
-    .order("id")
-    .range(offset, offset + 49);
-  if (error) throw new Error("No se pudo cargar el catálogo persistente.");
+    .rpc("yoru_search_anime", {
+      p_query: filters.query,
+      p_genre: filters.genre,
+      p_year: filters.year ? Number(filters.year) : null,
+      p_format: filters.format,
+      p_status: filters.status,
+      p_sort: filters.sort,
+      p_offset: page * PAGE_SIZE,
+      p_limit: PAGE_SIZE + 1,
+    })
+    .select(publicColumns)
+    .abortSignal(signal || AbortSignal.timeout(15000));
+  check(error);
+  const rows = (data || []) as PublicAnime[];
   return {
-    source: "persistent",
-    items: ((data || []) as PersistentAnime[]).filter(hasAvailableEpisode),
+    source: "persistent" as const,
+    items: rows.slice(0, PAGE_SIZE),
+    hasMore: rows.length > PAGE_SIZE,
   };
+}
+export async function loadPublicAnime(
+  client: SupabaseClient,
+  id: string,
+  signal?: AbortSignal,
+): Promise<PublicAnime | null> {
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  )
+    return null;
+  const { data, error } = await client
+    .from("public_anime")
+    .select(publicColumns)
+    .eq("id", id)
+    .abortSignal(signal || AbortSignal.timeout(15000))
+    .maybeSingle();
+  check(error);
+  return data as PublicAnime | null;
+}
+export async function loadCatalogFacets(
+  client: SupabaseClient,
+  signal?: AbortSignal,
+): Promise<{ genres: string[]; years: number[] }> {
+  const { data, error } = await client
+    .rpc("yoru_catalog_facets")
+    .abortSignal(signal || AbortSignal.timeout(15000));
+  check(error);
+  return data || { genres: [], years: [] };
 }

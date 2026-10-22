@@ -144,7 +144,7 @@ export default function Admin() {
                         {isPublishedAnime(anime) ? (
                           <Link
                             className="admin-anime"
-                            to={`/anime/${anime.id}`}
+                            to={`/demo/anime/${anime.id}`}
                           >
                             <img src={anime.artwork} alt="" />
                             {anime.title}
@@ -190,7 +190,7 @@ export default function Admin() {
                       <td>
                         <Link
                           className="text-link"
-                          to={`/anime/${anime.id}/episodio/${episode.number}`}
+                          to={`/demo/anime/${anime.id}/episodio/${episode.number}`}
                         >
                           {episode.number}. {episode.title}
                           <ArrowUpRight size={13} />

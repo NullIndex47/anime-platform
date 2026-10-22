@@ -1,69 +1,84 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  filterPersistent,
-  hasAvailableEpisode,
-  type PersistentAnime,
+  emptyFilters,
+  loadPersistentCatalog,
+  loadPublicAnime,
+  parsePublicFilters,
+  publicColumns,
+  PAGE_SIZE,
 } from "./persistent-catalog";
-import { defaultFilters } from "./catalog";
-const row: PersistentAnime = {
-  id: "persistent-test",
-  title: "Tést fixture",
-  title_romaji: null,
-  title_english: null,
-  title_native: null,
-  synopsis: null,
-  genres: ["Test"],
-  year: 2026,
-  format: "TV",
-  airing_status: "RELEASING",
-  score: null,
-  studio: null,
-  total_episodes: null,
-  catalog_episodes: [],
-};
-test("Persistent filters retain existing search semantics without mapping missing values to fictional metadata", () => {
-  assert.equal(
-    filterPersistent([row], {
-      ...defaultFilters,
-      query: "test fixture",
-      format: "Serie",
-      status: "En emisión",
-    }).length,
-    1,
+test("public query is bounded, server filtered, and does not request private rows", async () => {
+  const calls: unknown[] = [];
+  const client = {
+    rpc: (name: string, args: unknown) => {
+      calls.push([name, args]);
+      return {
+        select: (columns: string) => {
+          assert.equal(columns, publicColumns);
+          return {
+            abortSignal: async () => ({
+              data: Array.from({ length: 25 }, (_, i) => ({ id: String(i) })),
+              error: null,
+            }),
+          };
+        },
+      };
+    },
+  } as unknown as SupabaseClient;
+  const result = await loadPersistentCatalog(
+    client,
+    { ...emptyFilters, query: "aoi", genre: "Adventure" },
+    2,
   );
-  assert.equal(
-    filterPersistent([row], { ...defaultFilters, year: "2025" }).length,
-    0,
+  assert.equal(result.items.length, PAGE_SIZE);
+  assert.equal(result.hasMore, true);
+  assert.deepEqual(calls, [
+    [
+      "yoru_search_anime",
+      {
+        p_query: "aoi",
+        p_genre: "Adventure",
+        p_year: null,
+        p_format: "",
+        p_status: "",
+        p_sort: "recent",
+        p_offset: 48,
+        p_limit: 25,
+      },
+    ],
+  ]);
+  assert.doesNotMatch(
+    publicColumns,
+    /reference|created_at|updated_at|origin|publication|catalog_episodes/,
   );
-  assert.equal(row.total_episodes, null);
+  await assert.rejects(loadPersistentCatalog(client, emptyFilters, -1));
 });
-test("Persistent entries need an actual available, authorized, published episode reference", () => {
-  assert.equal(hasAvailableEpisode(row), false);
-  const e = {
-    id: "test",
-    episode_number: 1,
-    title: "TEST ONLY",
-    published_at: "2020-01-01",
-    available: true,
-    authorized: false,
-    playback_reference: "TEST ONLY",
-  };
-  assert.equal(hasAvailableEpisode({ ...row, catalog_episodes: [e] }), false);
-  assert.equal(
-    hasAvailableEpisode({
-      ...row,
-      catalog_episodes: [{ ...e, authorized: true }],
+test("public failures never fall back to demo and invalid UUIDs never query", async () => {
+  const client = {
+    rpc: () => ({
+      select: () => ({
+        abortSignal: async () => ({ data: null, error: { code: "offline" } }),
+      }),
     }),
-    true,
+  } as unknown as SupabaseClient;
+  await assert.rejects(loadPersistentCatalog(client), /No se pudo cargar/);
+  assert.equal(
+    await loadPublicAnime({} as SupabaseClient, "el-viaje-de-aoi"),
+    null,
+  );
+});
+test("URL filters preserve navigation and accept legacy emission links", () => {
+  assert.deepEqual(
+    parsePublicFilters(
+      new URLSearchParams("status=En+emisi%C3%B3n&year=bad&sort=bad"),
+    ),
+    { ...emptyFilters, status: "RELEASING" },
   );
   assert.equal(
-    hasAvailableEpisode({
-      ...row,
-      catalog_episodes: [
-        { ...e, authorized: true, published_at: "2099-01-01" },
-      ],
-    }),
-    false,
+    parsePublicFilters(new URLSearchParams("q=" + "x".repeat(200))).query
+      .length,
+    100,
   );
 });

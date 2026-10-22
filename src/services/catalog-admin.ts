@@ -22,7 +22,7 @@ export function databaseError(error: { code?: string } | null) {
           : error.code === "23503" || error.code === "P0002"
             ? "El elemento o su relación ya no existe. Recarga los datos."
             : error.code === "PGRST202"
-              ? "Falta aplicar la migración de FASE 3B en Supabase."
+              ? "Falta aplicar una migración del catálogo en Supabase."
               : "No se pudo completar la operación en Supabase. Puedes reintentar.",
   );
 }
@@ -100,3 +100,15 @@ export const searchAniList = (search: string, signal?: AbortSignal) =>
     { action: "search", search },
     signal,
   );
+
+export async function setAnimePublication(id: string, published: boolean) {
+  // Database rechecks membership; UI checks are only for user experience.
+  if (!(await isAdministrator()))
+    throw new CatalogError("No tienes autorización para esta operación.");
+  const { error } = await requireClient().rpc("yoru_set_anime_publication", {
+    p_id: id,
+    p_published: published,
+    p_confirm: true,
+  });
+  databaseError(error);
+}

@@ -3237,3 +3237,21 @@ td {
   .yoru-admin .management-heading { align-items: flex-start; }
   .yoru-admin .management-heading h2 { font-size: 24px; }
 }
+
+
+/* Public persistent catalogue: original placeholder, no title-specific claims. */
+.public-intro {display:grid;grid-template-columns:1.4fr 1fr;overflow:hidden;padding:0;margin-bottom:3rem;min-height:380px;background:linear-gradient(120deg,#171f2b,#101718)}
+.public-intro>div {padding:clamp(1.5rem,5vw,4rem);align-self:center}
+.public-intro h1 {font-size:clamp(2.5rem,5vw,4.8rem);line-height:1.08;max-width:12ch;margin:1rem 0}
+.public-intro p {color:var(--muted);max-width:46ch;margin-bottom:2rem;line-height:1.8}
+.public-intro>img {height:100%;max-height:490px;width:100%;object-fit:cover;object-position:50% 35%}
+.public-poster {--accent:#c5f27b}
+.public-poster img {width:100%;height:100%;object-fit:cover}
+.public-pagination {display:flex;justify-content:center;align-items:center;gap:1rem;flex-wrap:wrap;margin-top:2rem}
+.public-availability {padding:2rem;margin-top:2rem}
+.public-availability p {max-width:75ch;line-height:1.7}
+.public-synopsis {white-space:pre-line;overflow-wrap:anywhere}
+.public-home>.section-heading {margin-top:2rem}
+@media(max-width:600px){.public-intro{grid-template-columns:1fr}.public-intro>img{height:200px;grid-row:1}.public-availability{padding:1.5rem}}
+
+.public-featured-link {display:flex;align-items:center;gap:.5rem;margin-top:1.25rem;line-height:1.5;color:var(--accent);overflow-wrap:anywhere}

@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import type { Anime, Episode } from "../types/anime";
 export function AnimeCard({ anime }: { anime: Anime }) {
   return (
-    <Link to={`/anime/${anime.id}`} className="anime-card group">
+    <Link to={`/demo/anime/${anime.id}`} className="anime-card group">
       <div
         className="poster"
         style={{ "--accent": anime.accent } as React.CSSProperties}
@@ -49,7 +49,7 @@ export function EpisodeCard({
   return (
     <Link
       className="episode-card group"
-      to={`/anime/${anime.id}/episodio/${episode.number}`}
+      to={`/demo/anime/${anime.id}/episodio/${episode.number}`}
     >
       <div className="episode-thumbnail">
         <img src={anime.artwork} alt="" loading="lazy" />
