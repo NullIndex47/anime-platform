@@ -149,16 +149,25 @@ test("Authorized administrator sees the default permission gate without fetching
   page,
 }) => {
   const s = await setup(page, true, false);
-  await expect(page.getByText(/Integración desactivada/)).toBeVisible();
+  await page
+    .getByRole("link", { name: "Importar desde AniList", exact: true })
+    .click();
+  await expect(
+    page.getByText("Pendiente de autorización", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Título del anime")).toHaveCount(0);
   await expect(
     page.getByRole("main").getByRole("button", { name: "Buscar", exact: true }),
-  ).toBeDisabled();
+  ).toHaveCount(0);
   expect(s.searches()).toBe(0);
 });
 test("Search, preview, import draft, local edits, reload and deletion never publish real titles", async ({
   page,
 }) => {
   const s = await setup(page);
+  await page
+    .getByRole("link", { name: "Importar desde AniList", exact: true })
+    .click();
   await expect(
     page.getByRole("main").getByRole("button", { name: "Buscar", exact: true }),
   ).toBeEnabled();
@@ -177,6 +186,7 @@ test("Search, preview, import draft, local edits, reload and deletion never publ
   await page.getByRole("button", { name: "Importar como borrador" }).click();
   await expect(page.getByRole("status")).toContainText("borrador privado");
   expect(s.imports()).toBe(1);
+  await page.getByRole("link", { name: "Ver mis animes", exact: true }).click();
   await page.getByRole("button", { name: "Editar", exact: true }).click();
   await page.getByLabel("Título local", { exact: true }).fill("Edited fixture");
   await page.getByLabel("Géneros separados por comas").fill("Test, Adventure");
@@ -221,6 +231,9 @@ test("Empty results and 429 cooldown have explicit, recoverable states", async (
   page,
 }) => {
   const s = await setup(page);
+  await page
+    .getByRole("link", { name: "Importar desde AniList", exact: true })
+    .click();
   const search = page
     .getByRole("main")
     .getByRole("button", { name: "Buscar", exact: true });

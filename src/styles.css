@@ -3145,3 +3145,95 @@ td {
 .season-manager .metadata-editor { margin: 1rem 0; }
 .season-manager button { white-space: normal; }
 @media (max-width: 600px) { .management-actions { justify-content: flex-start; } .management-heading { align-items: flex-start; } }
+
+/* FASE 3B.1: scoped to the private admin; public and demo layouts keep their scale. */
+.yoru-admin { width: min(1440px, calc(100% - 64px)); font-size: 16px; line-height: 1.6; --muted: #b0b7a8; }
+.yoru-admin .page-heading { margin-bottom: 28px; }
+.yoru-admin .page-heading h1 { font-size: clamp(32px, 4vw, 48px); line-height: 1.15; }
+.yoru-admin .page-heading p { font-size: 16px; max-width: 680px; color: var(--muted); }
+.yoru-admin .eyebrow { font-size: 12px; color: #b5c09a; }
+.yoru-admin .admin-layout { grid-template-columns: 240px minmax(0, 1fr); gap: 28px; align-items: start; }
+.yoru-admin .admin-content { min-width: 0; outline: none; }
+.yoru-admin .admin-nav { padding: 12px; }
+.yoru-admin .admin-nav > a { min-height: 48px; font-size: 15px; color: var(--muted); padding: 12px; }
+.yoru-admin .admin-nav > a[aria-current="page"] { background: #b5c09a12; color: #d0dbb9; border: 1px solid #b5c09a40; }
+.yoru-admin .admin-nav svg { display: block; flex-shrink: 0; }
+.yoru-admin .admin-demo-label { font-size: 13px; color: var(--muted); }
+.yoru-admin .admin-view-heading { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.yoru-admin h2 { font-size: 28px; font-weight: 650; line-height: 1.3; margin-bottom: 8px; }
+.yoru-admin h3 { font-size: 22px; font-weight: 600; }
+.yoru-admin h4 { font-size: 20px; margin: 0; }
+.yoru-admin p { overflow-wrap: anywhere; }
+.yoru-admin .admin-view-heading p { color: var(--muted); font-size: 14px; }
+.yoru-admin .button { min-height: 44px; font-size: 14px; padding: 10px 16px; border-radius: 8px; white-space: normal; text-align: center; line-height: 1.4; }
+.yoru-admin .button svg { flex-shrink: 0; }
+.yoru-admin .admin-primary { background: #b5c09a; color: #182014; }
+.yoru-admin .admin-primary:hover:not(:disabled) { background: #d0dbb9; }
+.yoru-admin .button-outline { color: #e4e6dd; border-color: #51574a; background: #ffffff04; }
+.yoru-admin .button-outline:hover:not(:disabled) { background: #b5c09a12; border-color: #b5c09a; }
+.yoru-admin .admin-danger { color: #ffc0b5; border-color: #94544c; background: #ed887c09; }
+.yoru-admin .admin-danger:hover:not(:disabled) { background: #ed887c20; border-color: #ed887c; }
+.yoru-admin .management-actions { justify-content: flex-start; gap: 10px; }
+.yoru-admin .admin-anime-list .admin-primary { flex-basis: 100%; }
+.yoru-admin .admin-feedback { background: #b5c09a12; border-left: 3px solid #b5c09a; padding: 14px 18px; margin-bottom: 18px; border-radius: 6px; }
+.yoru-admin .admin-anime-list { overflow: visible; background: transparent; border: 0; }
+.yoru-admin .admin-anime-list table { white-space: normal; width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0 12px; font-size: 16px; }
+.yoru-admin .admin-anime-list caption { padding: 0 0 4px; font-size: 14px; color: var(--muted); }
+.yoru-admin .admin-anime-list th { font-size: 13px; color: var(--muted); text-align: left; padding: 8px 18px; }
+.yoru-admin .admin-anime-list th:first-child { width: 29%; }
+.yoru-admin .admin-anime-list th:nth-child(2) { width: 16%; }
+.yoru-admin .admin-anime-list th:nth-child(3) { width: 14%; }
+.yoru-admin .admin-anime-list td { padding: 22px 18px; background: var(--surface); border-top: 1px solid #353a31; border-bottom: 1px solid #353a31; font-size: 16px; overflow-wrap: anywhere; vertical-align: middle; }
+.yoru-admin .admin-anime-list td:first-child { border-left: 1px solid #353a31; border-radius: 12px 0 0 12px; }
+.yoru-admin .admin-anime-list td:last-child { border-right: 1px solid #353a31; border-radius: 0 12px 12px 0; }
+.yoru-admin .admin-anime-list .text-link { font-size: 14px; text-decoration: underline; text-underline-offset: 4px; }
+.yoru-admin .admin-cell-label { display: none; }
+.yoru-admin .admin-badge { display: inline-flex; justify-self: start; width: fit-content; max-width: 100%; align-items: center; font-size: 13px; font-weight: 600; line-height: 1.5; padding: 5px 10px; border-radius: 6px; color: #d0d5c6; background: #ffffff08; border: 1px solid #51574a; }
+.yoru-admin .admin-badge.is-draft { color: #f4cb85; border-color: #e9b55d50; background: #e9b55d0c; }
+.yoru-admin .admin-badge.is-ready { color: #d0e7b7; border-color: #b5c09a60; background: #b5c09a12; }
+.yoru-admin .admin-breadcrumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 24px; color: var(--muted); font-size: 14px; }
+.yoru-admin .admin-breadcrumbs span { overflow-wrap: anywhere; min-width: 0; }
+.yoru-admin .admin-breadcrumbs svg { flex-shrink: 0; }
+.yoru-admin .management-heading { margin-bottom: 12px; }
+.yoru-admin .season-manager > p { margin-bottom: 22px; color: var(--muted); }
+.yoru-admin .season-list { margin: 24px 0 0; gap: 16px; }
+.yoru-admin .season-row { padding: 24px; gap: 16px; background: #101112; }
+.yoru-admin .season-row strong { font-size: 18px; }
+.yoru-admin .episode-manager { border: 0; padding-top: 0; margin-top: 24px; }
+.yoru-admin .episode-manager h3 { margin-bottom: 18px; }
+.yoru-admin .metadata-editor { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; border-color: #e9b55d55; }
+.yoru-admin .metadata-editor > h2, .yoru-admin .metadata-editor > h3, .yoru-admin .metadata-editor > h4, .yoru-admin .metadata-editor > p,
+.yoru-admin .metadata-editor > label:has(textarea), .yoru-admin .metadata-editor > .authorization-check { grid-column: 1 / -1; }
+.yoru-admin .admin-form-panel { margin: 24px 0; padding: 24px; border: 1px solid #e9b55d55; border-radius: 12px; background: #e9b55d05; }
+.yoru-admin .metadata-editor label { font-size: 15px; color: #e4e6dd; }
+.yoru-admin .metadata-editor input, .yoru-admin .metadata-editor select, .yoru-admin .metadata-editor textarea { font-size: 16px; min-height: 48px; }
+.yoru-admin .authorization-check input { min-height: auto; width: 20px !important; height: 20px; flex-shrink: 0; }
+.yoru-admin .demo-notice { font-size: 15px; line-height: 1.7; color: #d3d8c8; }
+.yoru-admin .catalog-import > .demo-notice { display: grid; gap: 14px; margin-top: 24px; padding: 24px; background: #b5c09a08; border: 1px solid #b5c09a30; border-radius: 10px; }
+.yoru-admin .catalog-import > .demo-notice strong { color: #f4cb85; font-size: 18px; }
+.yoru-admin .import-result small, .yoru-admin .import-metadata dt { font-size: 14px; color: var(--muted); opacity: 1; }
+@media (max-width: 1100px) {
+  .yoru-admin .admin-layout { grid-template-columns: 1fr; }
+  .yoru-admin .admin-nav { display: flex; flex-wrap: wrap; gap: 8px; }
+  .yoru-admin .admin-nav > a { flex: 1 1 200px; margin: 0; }
+  .yoru-admin .admin-demo-label { border: 0; padding: 12px; margin: 0; }
+}
+@media (max-width: 760px) {
+  .yoru-admin { width: calc(100% - 32px); }
+  .yoru-admin .admin-nav > a { font-size: 14px; }
+  .yoru-admin .admin-demo-label { display: flex; font-size: 13px; }
+  .yoru-admin .admin-anime-list table, .yoru-admin .admin-anime-list tbody { display: block; }
+  .yoru-admin .admin-anime-list caption { display: block; }
+  .yoru-admin .admin-anime-list thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .yoru-admin .admin-anime-list tr { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #353a31; border-radius: 12px; margin: 16px 0; background: var(--surface); padding: 20px; gap: 16px; }
+  .yoru-admin .admin-anime-list td { display: block; border: 0 !important; padding: 0; border-radius: 0 !important; }
+  .yoru-admin .admin-anime-list td:first-child, .yoru-admin .admin-anime-list td:last-child { grid-column: 1 / -1; }
+  .yoru-admin .admin-anime-list td:first-child { font-size: 20px; }
+  .yoru-admin .admin-cell-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .yoru-admin .management-actions .admin-primary { flex-basis: 100%; }
+  .yoru-admin .management-actions .button { flex-grow: 1; }
+  .yoru-admin .metadata-editor { grid-template-columns: minmax(0, 1fr); }
+  .yoru-admin .season-row, .yoru-admin .admin-form-panel { padding: 18px; }
+  .yoru-admin .management-heading { align-items: flex-start; }
+  .yoru-admin .management-heading h2 { font-size: 24px; }
+}
