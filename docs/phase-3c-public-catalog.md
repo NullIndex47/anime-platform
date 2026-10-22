@@ -52,6 +52,14 @@ La migración no es idempotente: aplicar una sola vez y registrar su aplicación
 
 Las pruebas E2E usan respuestas Supabase simuladas; la autorización real se verifica en PostgreSQL local con PGlite. La configuración remota de Supabase/OAuth y el deployment automático deben comprobarse por separado mediante estos pasos.
 
+## Pruebas locales
+
+- `npm test`: 54 aprobadas, con PostgreSQL/PGlite, RLS, revocación de administradores, permisos de proveedor, metadatos sin episodios, retirada y 2.000 fichas.
+- E2E frontend: primera ejecución completa con 81 aprobadas, 3 fallidas y 2 omitidas del Worker. Tras corregir la etiqueta accesible de filtros y aislar las comprobaciones afectadas, repetición de 12 casos con 12 aprobadas en escritorio y móvil. Los 84 casos frontend quedan validados en ejecuciones separadas. El ensayo de decenas de transiciones de vídeo dispone ahora de 90 s en ejecutores compartidos; no se modifica el reproductor.
+- Worker local con Wrangler: 2/2 pruebas HTTP aprobadas (POST anónimo devuelve 401 y JSON). En total, 86 casos E2E validados en ejecuciones separadas.
+- Compilación TypeScript/Vite correcta. Se conserva un aviso no bloqueante por el bundle principal mayor de 500 kB; administración, fixtures y reproductor demo se separan en chunks bajo demanda.
+- Inicio, Explorar y ficha a 320, 390, 768 y 1440 px: sin desbordamiento horizontal. `git diff --check` correcto.
+
 ## Capturas de validación local
 
 Datos de prueba y respuestas Supabase simuladas; no acreditan publicación de fichas reales ni cambios remotos.

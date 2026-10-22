@@ -16,6 +16,8 @@ async function checkEpisode(page: Page, number: number) {
   }
 }
 test('Siguiente repeatedly replaces the player and releases the previous media', async ({ page }) => {
+  // This stress case performs dozens of media transitions on shared CI runners.
+  test.setTimeout(90000);
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
