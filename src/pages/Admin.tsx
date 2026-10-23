@@ -23,6 +23,8 @@ import {
 } from "../services/catalog-admin";
 import type { AnimeMetadata, AnimePreview, CatalogRow } from "../types/catalog";
 import { createAnime, emptyMetadata } from "../services/episode-management";
+import { cleanupCovers } from "../services/covers";
+import CoverManager from "../components/CoverManager";
 import SeasonManager from "../components/SeasonManager";
 import NotFound from "./NotFound";
 
@@ -217,7 +219,7 @@ function AdminCatalog() {
           >
             <Download size={20} aria-hidden="true" /> Importar desde AniList
           </Link>
-          <span className="admin-demo-label">
+          <span className="admin-access-label">
             <LockKeyhole size={14} /> Administración autorizada
           </span>
         </nav>
@@ -318,7 +320,7 @@ function AdminCatalog() {
                   </p>
                 )}
                 {permissions && !permissions.enabled && (
-                  <p className="demo-notice">
+                  <p className="info-notice">
                     <LockKeyhole size={24} aria-hidden="true" />
                     <strong>Pendiente de autorización</strong>
                     <span>
@@ -598,6 +600,7 @@ function AdminCatalog() {
                                   await deleteAnime(row.id);
                                   setRows(await listDrafts());
                                   setNotice("Anime eliminado.");
+                                  await cleanupCovers();
                                 });
                             }}
                           >
@@ -611,10 +614,21 @@ function AdminCatalog() {
               </table>
               {!busy && rows.length === 0 && (
                 <p className="catalog-import">
-                  Todavía no hay animes reales importados.
+                  Todavía no hay fichas. Crea tu primer anime.
                 </p>
               )}
             </div>
+          )}
+          {section !== "importar" && editing && (
+            <CoverManager
+              key={`cover-${editing.id}`}
+              anime={editing}
+              refresh={async () => {
+                const items = await listDrafts();
+                setRows(items);
+                setEditing(items.find((r) => r.id === editing.id) || null);
+              }}
+            />
           )}
           {section !== "importar" && editing && (
             <MetadataEditor

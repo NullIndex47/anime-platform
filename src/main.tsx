@@ -5,13 +5,8 @@ import { Layout } from "./components/Layout";
 import Home from "./pages/Home";
 import Catalog from "./pages/Catalog";
 import AnimeDetail from "./pages/AnimeDetail";
-const DemoAnimeDetail = lazy(() => import("./pages/DemoAnimeDetail"));
-const DemoHome = lazy(() => import("./pages/DemoHome"));
-const DemoCatalog = lazy(() => import("./pages/DemoCatalog"));
-const Episode = lazy(() => import("./pages/Episode"));
 import Auth from "./pages/Auth";
 const Admin = lazy(() => import("./pages/Admin"));
-const AdminDemo = lazy(() => import("./pages/AdminDemo"));
 import NotFound from "./pages/NotFound";
 import Account from "./pages/Account";
 import Welcome from "./pages/Welcome";
@@ -32,15 +27,8 @@ createRoot(document.getElementById("root")!).render(
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Home />} />
-            <Route path="demo" element={<DemoHome />} />
-            <Route path="demo/catalogo" element={<DemoCatalog />} />
-            <Route path="demo/anime/:animeId" element={<DemoAnimeDetail />} />
             <Route path="catalogo" element={<Catalog />} />
             <Route path="anime/:animeId" element={<AnimeDetail />} />
-            <Route
-              path="demo/anime/:animeId/episodio/:episodeNumber"
-              element={<Episode />}
-            />
             <Route path="iniciar-sesion" element={<Auth />} />
             <Route
               path="registro"
@@ -58,8 +46,6 @@ createRoot(document.getElementById("root")!).render(
               path="actualizar-contrasena"
               element={<Navigate to="/iniciar-sesion" replace />}
             />
-            <Route path="demo/admin" element={<AdminDemo />} />
-            <Route path="demo/admin/:section" element={<AdminDemo />} />
             <Route path="admin" element={<Admin />} />
             <Route path="admin/:section" element={<Admin />} />
             <Route path="*" element={<NotFound />} />

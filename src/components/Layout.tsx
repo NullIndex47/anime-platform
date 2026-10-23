@@ -37,8 +37,7 @@ export function Layout() {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [location.pathname]);
   useEffect(() => {
-    if (!/^\/demo\/anime\/[^/]+\/episodio\/[^/]+\/?$/.test(location.pathname))
-      document.title = "YORU — Descubre otro mundo";
+    document.title = "YORU — Descubre otro mundo";
   }, [location.pathname]);
   useEffect(() => {
     setUserMenu(false);
@@ -221,8 +220,6 @@ export function Layout() {
             </div>
             <div className="footer-links">
               <Link to="/catalogo">Explorar</Link>
-              <Link to="/demo">Demostración ficticia</Link>
-              <Link to="/demo/admin">Panel demo</Link>
               <Link to={session ? "/cuenta" : "/iniciar-sesion"}>
                 {session ? "Mi perfil" : "Acceder con Google"}
               </Link>
@@ -238,7 +235,7 @@ export function Layout() {
           </div>
           <div className="container footer-bottom">
             <span>© 2026 Yoru · Un universo por descubrir</span>
-            <span className="demo-tag">
+            <span className="catalog-tag">
               YORU <span /> Catálogo público
             </span>
           </div>

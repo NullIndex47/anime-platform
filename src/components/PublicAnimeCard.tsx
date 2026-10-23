@@ -1,3 +1,4 @@
+import CoverImage from "./CoverImage";
 import { Link } from "react-router";
 import { ArrowUpRight, Star } from "lucide-react";
 import {
@@ -9,8 +10,8 @@ export function PublicAnimeCard({ anime }: { anime: PublicAnime }) {
   return (
     <Link to={`/anime/${anime.id}`} className="anime-card group">
       <div className="poster public-poster">
-        <img
-          src="/artwork/catalog-placeholder.svg"
+        <CoverImage
+          path={anime.cover_path}
           alt=""
           loading="lazy"
           width="600"
@@ -26,11 +27,13 @@ export function PublicAnimeCard({ anime }: { anime: PublicAnime }) {
             {(anime.score / 10).toFixed(1)}
           </span>
         )}
-        <div className="poster-lettering">
-          <span>CATÁLOGO YORU</span>
-          <strong>{anime.title}</strong>
-          <i>Una historia por descubrir</i>
-        </div>
+        {!anime.cover_path && (
+          <div className="poster-lettering">
+            <span>CATÁLOGO YORU</span>
+            <strong>{anime.title}</strong>
+            <i>Una historia por descubrir</i>
+          </div>
+        )}
         <span className="poster-arrow">
           <ArrowUpRight size={20} />
         </span>

@@ -1,3 +1,4 @@
+import CoverImage from "../components/CoverImage";
 import { Link } from "react-router";
 import { ArrowUpRight } from "lucide-react";
 import { usePublicCatalog } from "../catalog/usePublicCatalog";
@@ -27,9 +28,15 @@ export default function Home() {
             </Link>
           )}
         </div>
-        <img
-          src="/artwork/catalog-placeholder.svg"
-          alt="Paisaje nocturno original de YORU"
+        <CoverImage
+          path={
+            !catalog.loading && !catalog.error ? featured?.cover_path : null
+          }
+          alt={
+            featured
+              ? `Portada de ${featured.title}`
+              : "Paisaje nocturno original de YORU"
+          }
           width="600"
           height="850"
           fetchPriority="high"

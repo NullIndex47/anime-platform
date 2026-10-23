@@ -18,6 +18,9 @@ const row = {
   playback_available: false,
 };
 async function mocks(page: Page) {
+  await page.route(`${root}/rest/v1/public_seasons**`, (r) =>
+    r.fulfill({ json: [] }),
+  );
   await page.route(`${root}/rest/v1/rpc/yoru_search_anime**`, (r) =>
     r.fulfill({ json: [row] }),
   );

@@ -19,6 +19,7 @@ export interface AnimePreview extends AnimeMetadata {
   banner_url: string | null;
 }
 export interface CatalogRow extends AnimeMetadata {
+  cover_path?: string | null;
   id: string;
   catalog_publication: { state: "draft" | "published" } | null;
   catalog_origins?: { external_id: number; source_url: string } | null;

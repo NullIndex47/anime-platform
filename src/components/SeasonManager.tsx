@@ -9,6 +9,8 @@ import {
   listSeasons,
   saveEpisode,
   saveSeason,
+  setSeasonPublication,
+  setEpisodePublication,
   type EpisodeInput,
   type EpisodeRow,
   type SeasonRow,
@@ -114,7 +116,10 @@ export default function SeasonManager({
           {selected ? "Volver a temporadas" : "Volver a animes"}
         </button>
       </div>
-      <p>Organiza el catálogo privado. Guardar no publica contenido.</p>
+      <p>
+        Guardar no publica contenido. Publica cada temporada y episodio por
+        separado; solo serán visibles si la ficha también está publicada.
+      </p>
       {error && (
         <p role="alert">
           {error}{" "}
@@ -206,7 +211,35 @@ export default function SeasonManager({
                   Temporada {season.season_number}
                   {season.name ? ` · ${season.name}` : ""}
                 </strong>
+                <span className="admin-badge">
+                  {season.published ? "Publicada" : "Borrador privado"}
+                </span>
                 <div className="management-actions">
+                  <button
+                    className="button button-outline"
+                    disabled={busy}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          season.published
+                            ? "¿Retirar esta temporada? Sus episodios dejarán de ser visibles."
+                            : "¿Publicar los datos de esta temporada? Sus episodios conservan su estado individual.",
+                        )
+                      )
+                        void run(async () => {
+                          await setSeasonPublication(
+                            anime.id,
+                            season.id,
+                            !season.published,
+                          );
+                          setSeasons(await listSeasons(anime.id));
+                        });
+                    }}
+                  >
+                    {season.published
+                      ? "Retirar temporada"
+                      : "Publicar temporada"}
+                  </button>
                   <button
                     className="button admin-primary"
                     disabled={busy}
@@ -450,9 +483,10 @@ function EpisodeManager({
             />
             Confirmo que la fuente es legítima y tengo autorización para usarla.
           </label>
-          <p className="demo-notice">
-            {episodeStatus(input)}. La reproducción y publicación están
-            pendientes de FASE 3C. La referencia no se abre ni se consulta.
+          <p className="info-notice">
+            {episodeStatus(input)}. La referencia permanece privada y no se
+            abre. Guardar devuelve el episodio a borrador; publica sus datos
+            después de revisarlos. La reproducción integrada está pendiente.
           </p>
           <button className="button button-small" disabled={busy}>
             Guardar episodio privado
@@ -476,9 +510,35 @@ function EpisodeManager({
             <span
               className={`admin-badge ${row.authorized ? "is-ready" : "is-draft"}`}
             >
-              {episodeStatus(row)}
+              {row.published
+                ? "Publicado · reproducción no disponible"
+                : episodeStatus(row)}
             </span>
             <div className="management-actions">
+              <button
+                className="button button-outline"
+                disabled={busy}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      row.published
+                        ? "¿Retirar este episodio?"
+                        : "¿Publicar los datos de este episodio? Esto no habilita su reproducción.",
+                    )
+                  )
+                    void run(async () => {
+                      await setEpisodePublication(
+                        animeId,
+                        season.id,
+                        row.id,
+                        !row.published,
+                      );
+                      setRows(await listEpisodes(animeId, season.id));
+                    });
+                }}
+              >
+                {row.published ? "Retirar episodio" : "Publicar episodio"}
+              </button>
               <button
                 className="button button-outline"
                 disabled={busy}
