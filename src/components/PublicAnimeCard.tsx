@@ -27,13 +27,6 @@ export function PublicAnimeCard({ anime }: { anime: PublicAnime }) {
             {(anime.score / 10).toFixed(1)}
           </span>
         )}
-        {!anime.cover_path && (
-          <div className="poster-lettering">
-            <span>CATÁLOGO YORU</span>
-            <strong>{anime.title}</strong>
-            <i>Una historia por descubrir</i>
-          </div>
-        )}
         <span className="poster-arrow">
           <ArrowUpRight size={20} />
         </span>
