@@ -236,14 +236,11 @@ test("admin changes metadata and cover, reloads, replaces/removes image and publ
     page.getByText("Ficha publicada en el catálogo público."),
   ).toBeVisible();
   await page.goto("/");
-  await expect(page.locator(".public-intro img")).toHaveAttribute(
+  await expect(page.locator(".featured-cover img")).toHaveAttribute(
     "src",
     /token=test/,
   );
-  await expect(page.locator(".poster img")).toHaveAttribute(
-    "src",
-    /token=test/,
-  );
+  await expect(page.locator(".home-catalog .anime-card")).toHaveCount(0);
   await page.goto("/catalogo?q=86");
   await expect(page.locator(".poster img")).toHaveAttribute(
     "src",

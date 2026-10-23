@@ -1,18 +1,28 @@
-import CoverImage from "../components/CoverImage";
 import { Link } from "react-router";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Moon } from "lucide-react";
 import { usePublicCatalog } from "../catalog/usePublicCatalog";
+import { selectHomeCatalog } from "../catalog/featured";
 import { emptyFilters } from "../services/persistent-catalog";
 import { PublicAnimeCard, CatalogState } from "../components/PublicAnimeCard";
+import FeaturedCarousel from "../components/FeaturedCarousel";
+
 export default function Home() {
   const catalog = usePublicCatalog(emptyFilters);
-  const featured = catalog.items[0];
+  const { featured, others } = selectHomeCatalog(catalog.items);
+  const ready = !catalog.loading && !catalog.error;
   return (
     <div className="container page-space public-home">
-      <section className="public-intro panel">
-        <div>
+      <CatalogState {...catalog} />
+      {ready && (featured.length ? (
+        <FeaturedCarousel
+          key={featured.map((anime) => anime.id).join(",")}
+          items={featured}
+        />
+      ) : (
+        <section className="home-welcome panel" aria-labelledby="welcome-title">
+          <Moon size={40} aria-hidden="true" />
           <span className="eyebrow">HISTORIAS QUE SE QUEDAN CONTIGO</span>
-          <h1>
+          <h1 id="welcome-title">
             Tu próximo universo<span className="accent">.</span>
           </h1>
           <p>
@@ -20,45 +30,23 @@ export default function Home() {
             detalle. El viaje empieza aquí.
           </p>
           <Link className="button" to="/catalogo">
-            Explorar catálogo <ArrowUpRight size={18} />
+            Explorar catálogo <ArrowUpRight size={18} aria-hidden="true" />
           </Link>
-          {featured && !catalog.loading && !catalog.error && (
-            <Link className="public-featured-link" to={`/anime/${featured.id}`}>
-              Descubrir {featured.title} <ArrowUpRight size={16} />
-            </Link>
-          )}
-        </div>
-        <CoverImage
-          path={
-            !catalog.loading && !catalog.error ? featured?.cover_path : null
-          }
-          alt={
-            featured
-              ? `Portada de ${featured.title}`
-              : "Paisaje nocturno original de YORU"
-          }
-          width="600"
-          height="850"
-          fetchPriority="high"
-        />
-      </section>
-      <CatalogState {...catalog} empty={!catalog.items.length} />
-      {!catalog.loading && !catalog.error && featured && (
-        <section
-          className={`home-catalog${catalog.items.length === 1 ? " home-catalog-single" : ""}`}
-          aria-labelledby="home-catalog-title"
-        >
+        </section>
+      ))}
+      {ready && others.length > 0 && (
+        <section className="home-catalog" aria-labelledby="home-catalog-title">
           <div className="section-heading">
             <div>
               <span className="eyebrow">UN MUNDO POR DESCUBRIR</span>
               <h2 id="home-catalog-title">En el catálogo</h2>
             </div>
             <Link className="text-link" to="/catalogo">
-              Ver todas las historias <ArrowUpRight size={16} />
+              Ver todas las historias <ArrowUpRight size={16} aria-hidden="true" />
             </Link>
           </div>
           <div className="anime-grid catalog-grid">
-            {catalog.items.slice(0, 12).map((anime) => (
+            {others.map((anime) => (
               <PublicAnimeCard key={anime.id} anime={anime} />
             ))}
           </div>

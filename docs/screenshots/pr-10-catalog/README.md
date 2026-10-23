@@ -34,3 +34,7 @@ Capturas locales de la PR #10 con respuestas de catálogo simuladas. La ficha y 
 | Escritorio | Móvil |
 | --- | --- |
 | ![Footer en escritorio](footer-1440.png) | ![Footer en móvil](footer-390.png) |
+
+## Revisión posterior de Inicio
+
+Estas imágenes documentan la revisión tipográfica previa al carrusel. La composición actual de Inicio y sus escenarios están en [Carrusel de destacados](../pr-10-carousel/README.md).

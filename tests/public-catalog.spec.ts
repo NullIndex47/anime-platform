@@ -111,7 +111,7 @@ test("loading, error retry, empty and unavailable routes", async ({ page }) => {
   await page.getByRole("button", { name: "Reintentar", exact: true }).click();
   await expect(
     page.getByRole("heading", {
-      name: "Las próximas historias están en camino",
+      name: "Tu próximo universo.",
     }),
   ).toBeVisible();
   await page.route(`${root}/rest/v1/public_anime**`, (r) =>
