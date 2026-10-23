@@ -44,11 +44,14 @@ export default function Home() {
       </section>
       <CatalogState {...catalog} empty={!catalog.items.length} />
       {!catalog.loading && !catalog.error && featured && (
-        <>
+        <section
+          className={`home-catalog${catalog.items.length === 1 ? " home-catalog-single" : ""}`}
+          aria-labelledby="home-catalog-title"
+        >
           <div className="section-heading">
             <div>
               <span className="eyebrow">UN MUNDO POR DESCUBRIR</span>
-              <h2>En el catálogo</h2>
+              <h2 id="home-catalog-title">En el catálogo</h2>
             </div>
             <Link className="text-link" to="/catalogo">
               Ver todas las historias <ArrowUpRight size={16} />
@@ -59,7 +62,7 @@ export default function Home() {
               <PublicAnimeCard key={anime.id} anime={anime} />
             ))}
           </div>
-        </>
+        </section>
       )}
     </div>
   );

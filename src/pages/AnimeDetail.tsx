@@ -80,10 +80,6 @@ export default function AnimeDetail() {
             width="600"
             height="850"
           />
-          <div className="detail-art-title">
-            <span>CATÁLOGO YORU</span>
-            <strong>{anime.title}</strong>
-          </div>
         </div>
         <div className="detail-copy">
           <span className="eyebrow">
