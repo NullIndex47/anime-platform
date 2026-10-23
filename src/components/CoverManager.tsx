@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { ImagePlus } from "lucide-react";
 import type { CatalogRow } from "../types/catalog";
 import { changeCover, cleanupCovers } from "../services/covers";
 import CoverImage from "./CoverImage";
@@ -10,7 +11,11 @@ export default function CoverManager({
   refresh: () => Promise<void>;
 }) {
   const [file, setFile] = useState<File | null>(null);
-  const [authorized, setAuthorized] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const hintId = useId();
+  const selectionId = useId();
+  const [preview, setPreview] = useState("");
+  const [previewFailed, setPreviewFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -34,6 +39,16 @@ export default function CoverManager({
       setError("Hay una limpieza de portadas pendiente. Puedes reintentar."),
     );
   }, []);
+  useEffect(() => {
+    setPreviewFailed(false);
+    if (!file) {
+      setPreview("");
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
   return (
     <section
       className="panel cover-manager"
@@ -46,53 +61,86 @@ export default function CoverManager({
         width={150}
         height={212}
       />
-      <p>
-        JPEG, PNG o WebP · máximo 2 MiB. Usa imágenes propias o autorizadas.
+      <p id={hintId} className="cover-hint">
+        JPG, PNG o WebP · Máximo 2 MB
       </p>
       {error && <p role="alert">{error}</p>}
       {notice && <p role="status">{notice}</p>}
       <form
+        aria-busy={busy}
         onSubmit={(e) => {
           e.preventDefault();
-          if (file && authorized)
+          if (file)
             void run(async () => {
               await changeCover(anime.id, anime.cover_path || null, file);
               await refresh();
               setFile(null);
-              setAuthorized(false);
               setInputKey((v) => v + 1);
               setNotice("Portada guardada.");
               await cleanupCovers();
             });
         }}
       >
-        <label>
-          Imagen de portada
-          <input
-            key={inputKey}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            required
-            disabled={busy}
-            onChange={(e) => {
-              setFile(e.target.files?.[0] || null);
-              setAuthorized(false);
-            }}
-          />
-        </label>
-        <label className="authorization-check">
-          <input
-            type="checkbox"
-            required
-            checked={authorized}
-            disabled={busy}
-            onChange={(e) => setAuthorized(e.target.checked)}
-          />
-          Confirmo que tengo permiso para publicar esta imagen.
-        </label>
+        <input
+          ref={inputRef}
+          key={inputKey}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          aria-label="Imagen de portada"
+          aria-describedby={hintId}
+          hidden
+          disabled={busy}
+          onChange={(e) => {
+            const selected = e.target.files?.[0];
+            if (selected) {
+              setFile(selected);
+              setError("");
+              setNotice("");
+            }
+          }}
+        />
+        <button
+          type="button"
+          className="cover-picker"
+          aria-label={file ? "Cambiar imagen" : "Seleccionar imagen"}
+          aria-describedby={`${hintId} ${selectionId}`}
+          disabled={busy}
+          onClick={() => inputRef.current?.click()}
+        >
+          {file && preview && !previewFailed ? (
+            <img
+              className="cover-selection-preview"
+              src={preview}
+              alt="Vista previa de la portada seleccionada"
+              onError={() => setPreviewFailed(true)}
+            />
+          ) : (
+            <span className="cover-picker-icon">
+              <ImagePlus size={28} aria-hidden="true" />
+            </span>
+          )}
+          <span className="cover-picker-content">
+            <span className="cover-picker-title">
+              {file ? "Imagen seleccionada" : "Elige una portada"}
+            </span>
+            <span className="cover-picker-description">
+              {file
+                ? previewFailed
+                  ? "Vista previa no disponible"
+                  : "Vista previa antes de guardar"
+                : "Haz clic para buscar una imagen"}
+            </span>
+            <span className="button cover-picker-action">
+              {file ? "Cambiar imagen" : "Seleccionar imagen"}
+            </span>
+          </span>
+        </button>
+        <p id={selectionId} className="cover-selection-name" role="status">
+          {file ? file.name : "Ninguna imagen seleccionada"}
+        </p>
         <div className="management-actions">
-          <button className="button" disabled={busy || !file || !authorized}>
-            Guardar portada
+          <button className="button" disabled={busy || !file}>
+            {busy ? "Procesando…" : "Guardar portada"}
           </button>
           {anime.cover_path && (
             <button

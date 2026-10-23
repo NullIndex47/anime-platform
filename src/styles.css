@@ -1795,9 +1795,27 @@ td {
 /* Real catalog: individual covers and published episode metadata. */
 .cover-manager { padding: 24px; margin-block: 20px; }
 .cover-manager > img { object-fit: cover; border-radius: 12px; margin-block: 16px; }
-.cover-manager form, .cover-manager label { display: grid; gap: 12px; }
-.cover-manager input[type="file"] { width: 100%; max-width: 100%; }
-.cover-manager .authorization-check { display: flex; align-items: center; }
+.cover-manager form { display: grid; gap: 12px; min-width: 0; }
+.cover-manager .cover-hint { color: #b8bab5; margin-bottom: 16px; font-size: 14px; }
+.cover-manager .cover-picker {
+  display: flex; align-items: center; justify-content: center; gap: 24px;
+  width: 100%; min-width: 0; padding: 28px 20px;
+  border: 1px dashed #86704e; border-radius: 16px;
+  background: #e9b55d06; text-align: left;
+}
+.cover-manager .cover-picker:hover:not(:disabled) { border-color: var(--accent); background: #e9b55d0d; }
+.cover-picker-icon { display: grid; place-items: center; width: 60px; height: 60px; flex-shrink: 0; border-radius: 16px; background: #e9b55d14; color: var(--accent); }
+.cover-picker-content { display: grid; justify-items: start; gap: 10px; min-width: 0; }
+.cover-picker-title { font-weight: 600; }
+.cover-picker-description, .cover-selection-name { color: #b8bab5; font-size: 14px; }
+.cover-selection-name { overflow-wrap: anywhere; }
+.cover-manager .cover-picker-action { background: var(--accent); color: #17130d; border: 1px solid var(--accent); pointer-events: none; }
+.cover-selection-preview { width: 100px; height: 140px; object-fit: contain; border-radius: 8px; background: #101112; flex-shrink: 0; }
+@media (max-width: 600px) {
+  .cover-manager { padding: 16px; }
+  .cover-manager .cover-picker { flex-direction: column; gap: 16px; padding: 24px 16px; text-align: center; }
+  .cover-picker-content { justify-items: center; }
+}
 .public-seasons { margin-block: 36px; }
 .public-seasons > h2 { font-size: clamp(24px, 4vw, 32px); margin-bottom: 20px; }
 .public-season { padding: 20px; margin-block: 12px; }

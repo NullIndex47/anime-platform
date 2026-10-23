@@ -207,9 +207,6 @@ test("admin changes metadata and cover, reloads, replaces/removes image and publ
     buffer: Buffer.from("not an image"),
   });
   await page
-    .getByLabel("Confirmo que tengo permiso para publicar esta imagen.")
-    .check();
-  await page
     .getByRole("button", { name: "Guardar portada", exact: true })
     .click();
   await expect(page.getByRole("alert")).toContainText(
@@ -218,9 +215,6 @@ test("admin changes metadata and cover, reloads, replaces/removes image and publ
   expect(state.uploads).toHaveLength(0);
   for (let i = 0; i < 2; i++) {
     await page.getByLabel("Imagen de portada").setInputFiles(png);
-    await page
-      .getByLabel("Confirmo que tengo permiso para publicar esta imagen.")
-      .check();
     await page
       .getByRole("button", { name: "Guardar portada", exact: true })
       .click();
@@ -291,6 +285,62 @@ test("admin changes metadata and cover, reloads, replaces/removes image and publ
     page.getByRole("heading", { name: "Esta historia aún no existe" }),
   ).toBeVisible();
 });
+test("cover picker previews and changes a local selection with keyboard and responsive layout", async ({ page }, testInfo) => {
+  const state = await setup(page);
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "Editar", exact: true }).click();
+  const manager = page.getByRole("region", { name: "Portada de 86 EIGHTY-SIX" });
+  await expect(manager.getByText("JPG, PNG o WebP · Máximo 2 MB", { exact: true })).toBeVisible();
+  await expect(manager.getByRole("checkbox")).toHaveCount(0);
+  await expect(manager.getByRole("button", { name: "Guardar portada", exact: true })).toBeDisabled();
+  const picker = manager.getByRole("button", { name: "Seleccionar imagen", exact: true });
+  await manager.screenshot({ path: testInfo.outputPath("cover-picker-empty.png") });
+  await picker.focus();
+  await expect(picker).toBeFocused();
+  const chooserPromise = page.waitForEvent("filechooser");
+  await page.keyboard.press("Enter");
+  await (await chooserPromise).setFiles(png);
+  const preview = manager.getByRole("img", { name: "Vista previa de la portada seleccionada" });
+  await expect(preview).toBeVisible();
+  await expect(preview).toHaveAttribute("src", /^blob:/);
+  await expect.poll(() => preview.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  await expect(manager.getByRole("status")).toHaveText("cover.png");
+  expect(state.uploads).toHaveLength(0);
+  const firstPreview = await preview.getAttribute("src");
+  const change = manager.getByRole("button", { name: "Cambiar imagen", exact: true });
+  const replacementPromise = page.waitForEvent("filechooser");
+  await change.click();
+  const longName = "portada-".repeat(20) + ".png";
+  await (await replacementPromise).setFiles({ ...png, name: longName });
+  await expect(manager.getByRole("status")).toHaveText(longName);
+  await expect(preview).not.toHaveAttribute("src", firstPreview!);
+  expect(state.uploads).toHaveLength(0);
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await manager.scrollIntoViewIfNeeded();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expect(change).toBeVisible();
+    await expect(preview).toBeVisible();
+    if (width === 390 || width === 1440)
+      await manager.screenshot({ path: testInfo.outputPath(`cover-picker-${width}.png`) });
+  }
+  // Hold the real upload boundary to verify loading and recoverable errors.
+  let failUpload!: () => void;
+  const uploadGate = new Promise<void>((resolve) => { failUpload = resolve; });
+  await page.route(`${root}/storage/v1/object/yoru-covers/**`, async (route) => {
+    await uploadGate;
+    await route.fulfill({ status: 500, json: { message: "Upload failed" } });
+  });
+  await manager.getByRole("button", { name: "Guardar portada", exact: true }).click();
+  await expect(manager.getByRole("button", { name: "Procesando…", exact: true })).toBeDisabled();
+  await expect(change).toBeDisabled();
+  failUpload();
+  await expect(manager.getByRole("alert")).toContainText("No se pudo subir la portada");
+  await expect(change).toBeEnabled();
+  await expect(preview).toBeVisible();
+  await expect(manager.getByRole("button", { name: "Guardar portada", exact: true })).toBeEnabled();
+});
+
 test("independent season/episode publication shows public metadata without fictional playback", async ({
   page,
 }) => {
