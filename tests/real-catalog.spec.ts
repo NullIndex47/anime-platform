@@ -347,3 +347,65 @@ test("all retired demo routes return the application 404 and have no navigation 
     await expect(page.locator('a[href^="/demo"],video')).toHaveCount(0);
   }
 });
+
+test("deferred covers sign near the viewport after a minute and refresh a failed image once", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.clock.install();
+  const paths = Array.from(
+    { length: 24 },
+    (_, i) => `${animeId}/deferred-${i}.png`,
+  );
+  const signatures = new Map<string, number>();
+  let delayedFirstFetch = true;
+  await page.route(`${root}/rest/v1/rpc/yoru_search_anime**`, (r) =>
+    r.fulfill({
+      json: paths.map((path, i) => ({
+        ...initial,
+        id: `00000000-0000-0000-0000-${String(i).padStart(12, "0")}`,
+        title: `Historia ${i}`,
+        cover_path: path,
+      })),
+    }),
+  );
+  await page.route(`${root}/storage/v1/object/**`, async (r) => {
+    if (r.request().method() === "POST") {
+      const path = decodeURIComponent(
+        new URL(r.request().url()).pathname.split("/yoru-covers/")[1],
+      );
+      signatures.set(path, (signatures.get(path) || 0) + 1);
+      return r.fulfill({
+        json: {
+          signedURL: `/object/sign/yoru-covers/image.png?path=${encodeURIComponent(path)}&token=signature-${signatures.get(path)}`,
+        },
+      });
+    }
+    const path = decodeURIComponent(new URL(r.request().url()).searchParams.get("path") || "");
+    if (path === paths.at(-1) && delayedFirstFetch) {
+      delayedFirstFetch = false;
+      return r.fulfill({ status: 403, json: { message: "Signature expired" } });
+    }
+    return r.fulfill({ contentType: "image/png", body: png.buffer });
+  });
+  await page.goto("/catalogo");
+  await page.clock.runFor(300);
+  await expect(page.locator(".anime-card")).toHaveCount(24);
+  expect(signatures.get(paths.at(-1)!)).toBeUndefined();
+  await page.clock.fastForward(61000);
+  const lastImage = page.locator(".poster img").last();
+  await lastImage.scrollIntoViewIfNeeded();
+  await expect.poll(() => signatures.get(paths.at(-1)!)).toBe(2);
+  await expect(lastImage).toHaveAttribute("src", /signature-2/);
+  await expect
+    .poll(() =>
+      lastImage.evaluate((img) => (img as HTMLImageElement).naturalWidth),
+    )
+    .toBeGreaterThan(0);
+  await lastImage.dispatchEvent("error");
+  await expect(lastImage).toHaveAttribute(
+    "src",
+    "/artwork/catalog-placeholder.svg",
+  );
+  expect(signatures.get(paths.at(-1)!)).toBe(2);
+});
