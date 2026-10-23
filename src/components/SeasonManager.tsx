@@ -1,17 +1,19 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type Ref,
+} from "react";
 import { ArrowLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import EpisodeManager, { type EpisodeNavigation } from "./EpisodeManager";
+import { useUnsavedChanges } from "../admin/useUnsavedChanges";
 import type { CatalogRow } from "../types/catalog";
 import {
-  deleteEpisode,
   deleteSeason,
-  episodeStatus,
-  listEpisodes,
   listSeasons,
-  saveEpisode,
   saveSeason,
   setSeasonPublication,
-  setEpisodePublication,
-  type EpisodeInput,
   type EpisodeRow,
   type SeasonRow,
 } from "../services/episode-management";
@@ -20,9 +22,11 @@ const message = (e: unknown) =>
 export default function SeasonManager({
   anime,
   close,
+  ref,
 }: {
   anime: CatalogRow;
   close: () => void;
+  ref?: Ref<{ leave: () => void }>;
 }) {
   const [selected, setSelected] = useState<SeasonRow | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
@@ -37,6 +41,11 @@ export default function SeasonManager({
   }, [editing]);
   const [number, setNumber] = useState(1);
   const [name, setName] = useState("");
+  const [baseline, setBaseline] = useState({ number: 1, name: "" });
+  const [episodeNumber, setEpisodeNumber] = useState<number | null>(null);
+  const [episodeBusy, setEpisodeBusy] = useState(false);
+  const episodeRef = useRef<EpisodeNavigation>(null);
+  const cache = useRef(new Map<string, EpisodeRow[]>());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -59,6 +68,24 @@ export default function SeasonManager({
       active = false;
     };
   }, [anime.id, retry]);
+  const confirmDiscard = useUnsavedChanges(
+    !selected &&
+      !!editing &&
+      (busy || number !== baseline.number || name !== baseline.name),
+  );
+  const canLeave = () =>
+    !busy && (!selected ? confirmDiscard() : !!episodeRef.current?.canLeave());
+  const leave = () => {
+    if (canLeave()) close();
+  };
+  const seasonsView = () => {
+    if (!canLeave()) return;
+    setSelected(null);
+    setEditing(null);
+    setEpisodeNumber(null);
+    setNotice("");
+  };
+  useImperativeHandle(ref, () => ({ leave }));
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     setError("");
@@ -79,19 +106,43 @@ export default function SeasonManager({
       aria-label={`Temporadas de ${anime.title}`}
     >
       <nav className="admin-breadcrumbs" aria-label="Ruta del catálogo">
-        <button
-          className="button button-outline"
-          disabled={busy}
-          onClick={close}
-        >
-          <ArrowLeft size={18} aria-hidden="true" /> Mis animes
+        <button type="button" disabled={busy || episodeBusy} onClick={leave}>
+          Mis animes
         </button>
         <ChevronRight size={16} aria-hidden="true" />
-        <span>{anime.title}</span>
+        {selected ? (
+          <button
+            type="button"
+            disabled={busy || episodeBusy}
+            onClick={seasonsView}
+          >
+            {anime.title}
+          </button>
+        ) : (
+          <span aria-current="page">{anime.title}</span>
+        )}
         {selected && (
           <>
             <ChevronRight size={16} aria-hidden="true" />
-            <span>Temporada {selected.season_number}</span>
+            {episodeNumber !== null ? (
+              <button
+                type="button"
+                disabled={episodeBusy}
+                onClick={() => episodeRef.current?.showList()}
+              >
+                Temporada {selected.season_number}
+              </button>
+            ) : (
+              <span aria-current="page">
+                Temporada {selected.season_number}
+              </span>
+            )}
+          </>
+        )}
+        {episodeNumber !== null && (
+          <>
+            <ChevronRight size={16} aria-hidden="true" />
+            <span aria-current="page">Episodio {episodeNumber}</span>
           </>
         )}
       </nav>
@@ -104,13 +155,8 @@ export default function SeasonManager({
         <button
           type="button"
           className="button button-outline"
-          disabled={busy}
-          onClick={() => {
-            if (selected) {
-              setSelected(null);
-              setNotice("");
-            } else close();
-          }}
+          disabled={busy || episodeBusy}
+          onClick={selected ? seasonsView : leave}
         >
           <ArrowLeft size={18} aria-hidden="true" />{" "}
           {selected ? "Volver a temporadas" : "Volver a animes"}
@@ -141,9 +187,12 @@ export default function SeasonManager({
             className="button button-small"
             disabled={busy}
             onClick={() => {
+              if (editing && !confirmDiscard()) return;
+              const next = (seasons.at(-1)?.season_number || 0) + 1;
               setEditing("new");
-              setNumber((seasons.at(-1)?.season_number || 0) + 1);
+              setNumber(next);
               setName("");
+              setBaseline({ number: next, name: "" });
             }}
           >
             <Plus size={20} aria-hidden="true" /> Añadir temporada
@@ -174,6 +223,7 @@ export default function SeasonManager({
                 Número de temporada
                 <input
                   autoFocus
+                  disabled={busy}
                   type="number"
                   required
                   min={1}
@@ -187,6 +237,7 @@ export default function SeasonManager({
                 Nombre de temporada (opcional)
                 <input
                   maxLength={250}
+                  disabled={busy}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -198,7 +249,9 @@ export default function SeasonManager({
                 type="button"
                 className="button button-outline"
                 disabled={busy}
-                onClick={() => setEditing(null)}
+                onClick={() => {
+                  if (confirmDiscard()) setEditing(null);
+                }}
               >
                 Cancelar temporada
               </button>
@@ -244,6 +297,7 @@ export default function SeasonManager({
                     className="button admin-primary"
                     disabled={busy}
                     onClick={() => {
+                      if (editing && !confirmDiscard()) return;
                       setSelected(season);
                       setEditing(null);
                       setNotice("");
@@ -255,6 +309,11 @@ export default function SeasonManager({
                     className="button button-outline"
                     disabled={busy}
                     onClick={() => {
+                      if (editing && !confirmDiscard()) return;
+                      setBaseline({
+                        number: season.season_number,
+                        name: season.name || "",
+                      });
                       setEditing(season);
                       setNumber(season.season_number);
                       setName(season.name || "");
@@ -272,7 +331,9 @@ export default function SeasonManager({
                         )
                       )
                         void run(async () => {
+                          if (editing && !confirmDiscard()) return;
                           await deleteSeason(anime.id, season.id);
+                          cache.current.delete(season.id);
                           setSeasons(await listSeasons(anime.id));
                           if (editing !== "new" && editing?.id === season.id)
                             setEditing(null);
@@ -294,287 +355,13 @@ export default function SeasonManager({
       {selected && (
         <EpisodeManager
           key={selected.id}
+          ref={episodeRef}
+          cache={cache.current}
+          onEditingChange={setEpisodeNumber}
+          onBusyChange={setEpisodeBusy}
           animeId={anime.id}
           season={selected}
         />
-      )}
-    </section>
-  );
-}
-const emptyEpisode: EpisodeInput = {
-  episode_number: 1,
-  title: "",
-  description: null,
-  playback_reference: null,
-  authorized: false,
-  authorization_reference: null,
-};
-function EpisodeManager({
-  animeId,
-  season,
-}: {
-  animeId: string;
-  season: SeasonRow;
-}) {
-  const [rows, setRows] = useState<EpisodeRow[]>([]);
-  const [editing, setEditing] = useState<EpisodeRow | "new" | null>(null);
-  const sectionRef = useRef<HTMLElement>(null);
-  useEffect(() => {
-    if (!editing) sectionRef.current?.focus({ preventScroll: true });
-  }, [editing]);
-  const [input, setInput] = useState<EpisodeInput>(emptyEpisode);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [retry, setRetry] = useState(0);
-  useEffect(() => {
-    let active = true;
-    setBusy(true);
-    setError("");
-    listEpisodes(animeId, season.id)
-      .then((items) => {
-        if (active) setRows(items);
-      })
-      .catch((e) => {
-        if (active) setError(message(e));
-      })
-      .finally(() => {
-        if (active) setBusy(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [animeId, season.id, retry]);
-  const run = async (action: () => Promise<void>) => {
-    setBusy(true);
-    setError("");
-    setNotice("");
-    try {
-      await action();
-    } catch (e) {
-      setError(message(e));
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <section
-      className="episode-manager"
-      ref={sectionRef}
-      tabIndex={-1}
-      aria-label={`Episodios de temporada ${season.season_number}`}
-    >
-      <h3>Episodios</h3>
-      {error && (
-        <p role="alert">
-          {error}{" "}
-          <button
-            className="button button-outline"
-            disabled={busy}
-            onClick={() => setRetry((v) => v + 1)}
-          >
-            Recargar episodios
-          </button>
-        </p>
-      )}
-      {notice && <p role="status">{notice}</p>}
-      {busy && <p role="status">Cargando episodios…</p>}
-      <button
-        className="button button-small"
-        disabled={busy}
-        onClick={() => {
-          setEditing("new");
-          setInput({
-            ...emptyEpisode,
-            episode_number: (rows.at(-1)?.episode_number || 0) + 1,
-          });
-        }}
-      >
-        <Plus size={20} aria-hidden="true" /> Crear episodio
-      </button>
-      {editing && (
-        <form
-          className="metadata-editor admin-form-panel"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void run(async () => {
-              await saveEpisode(
-                animeId,
-                season.id,
-                editing === "new" ? null : editing.id,
-                input,
-              );
-              setRows(await listEpisodes(animeId, season.id));
-              setEditing(null);
-              setNotice("Episodio guardado como privado.");
-            });
-          }}
-        >
-          <h4>{editing === "new" ? "Nuevo episodio" : "Editar episodio"}</h4>
-          <label>
-            Número de episodio
-            <input
-              autoFocus
-              type="number"
-              min={1}
-              max={2147483647}
-              step={1}
-              required
-              value={input.episode_number}
-              onChange={(e) =>
-                setInput({ ...input, episode_number: Number(e.target.value) })
-              }
-            />
-          </label>
-          <label>
-            Título del episodio
-            <input
-              required
-              maxLength={250}
-              value={input.title}
-              onChange={(e) => setInput({ ...input, title: e.target.value })}
-            />
-          </label>
-          <label>
-            Descripción (opcional)
-            <textarea
-              maxLength={10000}
-              value={input.description || ""}
-              onChange={(e) =>
-                setInput({ ...input, description: e.target.value || null })
-              }
-            />
-          </label>
-          <label>
-            Referencia privada de reproducción (opcional)
-            <input
-              maxLength={2000}
-              value={input.playback_reference || ""}
-              onChange={(e) =>
-                setInput({
-                  ...input,
-                  playback_reference: e.target.value || null,
-                  authorized: false,
-                })
-              }
-            />
-          </label>
-          <label>
-            Referencia del permiso o licencia (opcional)
-            <textarea
-              maxLength={2000}
-              value={input.authorization_reference || ""}
-              onChange={(e) =>
-                setInput({
-                  ...input,
-                  authorization_reference: e.target.value || null,
-                  authorized: false,
-                })
-              }
-            />
-          </label>
-          <label className="authorization-check">
-            <input
-              type="checkbox"
-              checked={input.authorized}
-              onChange={(e) =>
-                setInput({ ...input, authorized: e.target.checked })
-              }
-            />
-            Confirmo que la fuente es legítima y tengo autorización para usarla.
-          </label>
-          <p className="info-notice">
-            {episodeStatus(input)}. La referencia permanece privada y no se
-            abre. Guardar devuelve el episodio a borrador; publica sus datos
-            después de revisarlos. La reproducción integrada está pendiente.
-          </p>
-          <button className="button button-small" disabled={busy}>
-            Guardar episodio privado
-          </button>
-          <button
-            type="button"
-            className="button button-outline"
-            disabled={busy}
-            onClick={() => setEditing(null)}
-          >
-            Cancelar episodio
-          </button>
-        </form>
-      )}
-      <div className="season-list">
-        {rows.map((row) => (
-          <article className="panel season-row" key={row.id}>
-            <strong>
-              {row.episode_number}. {row.title}
-            </strong>
-            <span
-              className={`admin-badge ${row.authorized ? "is-ready" : "is-draft"}`}
-            >
-              {row.published
-                ? "Publicado · reproducción no disponible"
-                : episodeStatus(row)}
-            </span>
-            <div className="management-actions">
-              <button
-                className="button button-outline"
-                disabled={busy}
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      row.published
-                        ? "¿Retirar este episodio?"
-                        : "¿Publicar los datos de este episodio? Esto no habilita su reproducción.",
-                    )
-                  )
-                    void run(async () => {
-                      await setEpisodePublication(
-                        animeId,
-                        season.id,
-                        row.id,
-                        !row.published,
-                      );
-                      setRows(await listEpisodes(animeId, season.id));
-                    });
-                }}
-              >
-                {row.published ? "Retirar episodio" : "Publicar episodio"}
-              </button>
-              <button
-                className="button button-outline"
-                disabled={busy}
-                onClick={() => {
-                  setEditing(row);
-                  setInput(row);
-                }}
-              >
-                <Pencil size={18} aria-hidden="true" /> Editar episodio
-              </button>
-              <button
-                className="button admin-danger"
-                disabled={busy}
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      `¿Eliminar el episodio ${row.episode_number} «${row.title}»? Esta acción no se puede deshacer.`,
-                    )
-                  )
-                    void run(async () => {
-                      await deleteEpisode(animeId, season.id, row.id);
-                      setRows(await listEpisodes(animeId, season.id));
-                      if (editing !== "new" && editing?.id === row.id)
-                        setEditing(null);
-                      setNotice("Episodio eliminado.");
-                    });
-                }}
-              >
-                <Trash2 size={18} aria-hidden="true" /> Eliminar episodio
-              </button>
-            </div>
-          </article>
-        ))}
-      </div>
-      {!busy && !error && !rows.length && (
-        <p>Esta temporada no tiene episodios.</p>
       )}
     </section>
   );

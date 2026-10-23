@@ -9,6 +9,7 @@ import {
   Trash2,
   Layers,
   ChevronRight,
+  MoreHorizontal,
 } from "lucide-react";
 import { useAuth } from "../auth/session";
 import {
@@ -26,6 +27,10 @@ import { createAnime, emptyMetadata } from "../services/episode-management";
 import { cleanupCovers } from "../services/covers";
 import CoverManager from "../components/CoverManager";
 import SeasonManager from "../components/SeasonManager";
+import {
+  UnsavedChangesProvider,
+  useUnsavedChanges,
+} from "../admin/useUnsavedChanges";
 import NotFound from "./NotFound";
 
 const message = (error: unknown) =>
@@ -94,11 +99,17 @@ export default function Admin() {
         </div>
       </div>
     );
-  return <AdminCatalog key={session.user.id} />;
+  return (
+    <UnsavedChangesProvider>
+      <AdminCatalog key={session.user.id} />
+    </UnsavedChangesProvider>
+  );
 }
 function AdminCatalog() {
   const { section = "" } = useParams();
   const contentRef = useRef<HTMLElement>(null);
+  const seasonManagerRef = useRef<{ leave: () => void }>(null);
+  const metadataGuard = useRef<(() => boolean) | null>(null);
   useEffect(() => {
     setOrganizing(null);
     setCreating(false);
@@ -205,8 +216,14 @@ function AdminCatalog() {
           <Link
             to="/admin/animes"
             aria-current={section !== "importar" ? "page" : undefined}
-            onClick={() => {
-              setOrganizing(null);
+            onClick={(event) => {
+              if (section === "importar") return;
+              event.preventDefault();
+              if (organizing) {
+                seasonManagerRef.current?.leave();
+                return;
+              }
+              if (metadataGuard.current && !metadataGuard.current()) return;
               setCreating(false);
               setEditing(null);
             }}
@@ -270,6 +287,8 @@ function AdminCatalog() {
                   className="button"
                   disabled={busy}
                   onClick={() => {
+                    if (metadataGuard.current && !metadataGuard.current())
+                      return;
                     setCreating(true);
                     setEditing(null);
                   }}
@@ -283,6 +302,9 @@ function AdminCatalog() {
             <MetadataEditor
               row={{ ...emptyMetadata, id: "new", catalog_publication: null }}
               busy={busy}
+              registerGuard={(guard) => {
+                metadataGuard.current = guard;
+              }}
               cancel={() => setCreating(false)}
               save={(metadata) =>
                 void run(async () => {
@@ -298,6 +320,7 @@ function AdminCatalog() {
           {organizing && (
             <SeasonManager
               key={organizing.id}
+              ref={seasonManagerRef}
               anime={organizing}
               close={() => setOrganizing(null)}
             />
@@ -520,49 +543,7 @@ function AdminCatalog() {
                         )}
                       </td>
                       <td>
-                        <div className="management-actions">
-                          <button
-                            className="button button-outline"
-                            disabled={
-                              busy ||
-                              (row.catalog_publication?.state !== "published" &&
-                                !!row.catalog_origins &&
-                                !permissions?.enabled)
-                            }
-                            onClick={() => {
-                              const publishing =
-                                row.catalog_publication?.state !== "published";
-                              if (
-                                window.confirm(
-                                  publishing
-                                    ? `¿Publicar «${row.title}»? Su información será visible para todos, aunque no tenga episodios reproducibles.`
-                                    : `¿Retirar «${row.title}»? La ficha dejará de ser accesible en el catálogo público y por enlace directo.`,
-                                )
-                              )
-                                void run(async () => {
-                                  await setAnimePublication(row.id, publishing);
-                                  setRows(await listDrafts());
-                                  setNotice(
-                                    publishing
-                                      ? "Ficha publicada en el catálogo público."
-                                      : "Ficha retirada. Ahora es un borrador privado.",
-                                  );
-                                });
-                            }}
-                          >
-                            {row.catalog_publication?.state === "published"
-                              ? "Retirar ficha"
-                              : "Publicar ficha"}
-                          </button>
-                          {row.catalog_publication?.state === "published" && (
-                            <Link
-                              className="button button-outline"
-                              to={`/anime/${row.id}`}
-                            >
-                              Ver ficha pública
-                            </Link>
-                          )}
-
+                        <div className="management-actions anime-row-actions">
                           <button
                             className="button admin-primary"
                             disabled={busy}
@@ -587,25 +568,98 @@ function AdminCatalog() {
                           >
                             <Pencil size={18} aria-hidden="true" /> Editar
                           </button>
-                          <button
-                            className="button admin-danger"
-                            disabled={busy}
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  `¿Eliminar «${row.title}» y todas sus temporadas y episodios? Esta acción no se puede deshacer.`,
-                                )
-                              )
-                                void run(async () => {
-                                  await deleteAnime(row.id);
-                                  setRows(await listDrafts());
-                                  setNotice("Anime eliminado.");
-                                  await cleanupCovers();
-                                });
+                          <details
+                            name="anime-actions"
+                            className="admin-row-menu"
+                            onKeyDown={(event) => {
+                              if (event.key === "Escape") {
+                                event.currentTarget.open = false;
+                                event.currentTarget
+                                  .querySelector("summary")
+                                  ?.focus();
+                              }
                             }}
                           >
-                            <Trash2 size={18} aria-hidden="true" /> Eliminar
-                          </button>
+                            <summary
+                              aria-label={`Más acciones de ${row.title}`}
+                              title="Más acciones"
+                              aria-disabled={busy}
+                              onClick={(event) => {
+                                if (busy) event.preventDefault();
+                              }}
+                            >
+                              <MoreHorizontal size={20} aria-hidden="true" />
+                            </summary>
+                            <div className="admin-row-menu-items">
+                              <button
+                                className="button button-outline"
+                                disabled={
+                                  busy ||
+                                  (row.catalog_publication?.state !==
+                                    "published" &&
+                                    !!row.catalog_origins &&
+                                    !permissions?.enabled)
+                                }
+                                onClick={() => {
+                                  const publishing =
+                                    row.catalog_publication?.state !==
+                                    "published";
+                                  if (
+                                    window.confirm(
+                                      publishing
+                                        ? `¿Publicar «${row.title}»? Su información será visible para todos, aunque no tenga episodios reproducibles.`
+                                        : `¿Retirar «${row.title}»? La ficha dejará de ser accesible en el catálogo público y por enlace directo.`,
+                                    )
+                                  )
+                                    void run(async () => {
+                                      await setAnimePublication(
+                                        row.id,
+                                        publishing,
+                                      );
+                                      setRows(await listDrafts());
+                                      setNotice(
+                                        publishing
+                                          ? "Ficha publicada en el catálogo público."
+                                          : "Ficha retirada. Ahora es un borrador privado.",
+                                      );
+                                    });
+                                }}
+                              >
+                                {row.catalog_publication?.state === "published"
+                                  ? "Retirar ficha"
+                                  : "Publicar ficha"}
+                              </button>
+                              {row.catalog_publication?.state ===
+                                "published" && (
+                                <Link
+                                  className="button button-outline"
+                                  to={`/anime/${row.id}`}
+                                >
+                                  Ver ficha pública
+                                </Link>
+                              )}
+
+                              <button
+                                className="button admin-danger"
+                                disabled={busy}
+                                onClick={() => {
+                                  if (
+                                    window.confirm(
+                                      `¿Eliminar «${row.title}» y todas sus temporadas y episodios? Esta acción no se puede deshacer.`,
+                                    )
+                                  )
+                                    void run(async () => {
+                                      await deleteAnime(row.id);
+                                      setRows(await listDrafts());
+                                      setNotice("Anime eliminado.");
+                                      await cleanupCovers();
+                                    });
+                                }}
+                              >
+                                <Trash2 size={18} aria-hidden="true" /> Eliminar
+                              </button>
+                            </div>
+                          </details>
                         </div>
                       </td>
                     </tr>
@@ -635,6 +689,9 @@ function AdminCatalog() {
               key={editing.id}
               row={editing}
               busy={busy}
+              registerGuard={(guard) => {
+                metadataGuard.current = guard;
+              }}
               cancel={() => setEditing(null)}
               save={(metadata) =>
                 void run(async () => {
@@ -663,8 +720,10 @@ function MetadataEditor({
   cancel,
   save,
   creating = false,
+  registerGuard,
 }: {
   creating?: boolean;
+  registerGuard?: (guard: (() => boolean) | null) => void;
   row: CatalogRow;
   busy: boolean;
   cancel: () => void;
@@ -685,6 +744,15 @@ function MetadataEditor({
     total_episodes: row.total_episodes,
   });
   const [genres, setGenres] = useState(row.genres.join(", "));
+  const initial = useRef({ data: JSON.stringify(data), genres });
+  const confirmDiscard = useUnsavedChanges(
+    JSON.stringify(data) !== initial.current.data ||
+      genres !== initial.current.genres,
+  );
+  useEffect(() => {
+    registerGuard?.(() => !busy && confirmDiscard());
+    return () => registerGuard?.(null);
+  }, [registerGuard, busy, confirmDiscard]);
   const fields: [keyof AnimeMetadata, string, number][] = [
     ["title", "Título local", 250],
     ["title_romaji", "Título romaji", 250],
@@ -716,6 +784,7 @@ function MetadataEditor({
         <label key={key}>
           {label}
           <input
+            disabled={busy}
             autoFocus={key === "title"}
             value={String(data[key] ?? "")}
             required={key === "title"}
@@ -729,6 +798,7 @@ function MetadataEditor({
       <label>
         Sinopsis
         <textarea
+          disabled={busy}
           maxLength={10000}
           value={data.synopsis || ""}
           onChange={(e) =>
@@ -738,7 +808,11 @@ function MetadataEditor({
       </label>
       <label>
         Géneros separados por comas
-        <input value={genres} onChange={(e) => setGenres(e.target.value)} />
+        <input
+          disabled={busy}
+          value={genres}
+          onChange={(e) => setGenres(e.target.value)}
+        />
       </label>
       {(
         [
@@ -750,6 +824,7 @@ function MetadataEditor({
         <label key={key}>
           {label}
           <input
+            disabled={busy}
             type="number"
             min={min}
             max={max}
@@ -786,6 +861,7 @@ function MetadataEditor({
         <label key={key}>
           {label}
           <select
+            disabled={busy}
             value={data[key] || ""}
             onChange={(e) =>
               setData({ ...data, [key]: e.target.value || null })
@@ -805,7 +881,9 @@ function MetadataEditor({
         type="button"
         className="button button-outline"
         disabled={busy}
-        onClick={cancel}
+        onClick={() => {
+          if (!busy && confirmDiscard()) cancel();
+        }}
       >
         Cancelar
       </button>

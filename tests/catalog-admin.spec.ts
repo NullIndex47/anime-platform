@@ -1,3 +1,4 @@
+import { revealAnimeActions } from "./helpers/anime-actions";
 import { test, expect, type Page } from "@playwright/test";
 const endpoint = "https://yoru-auth-test.supabase.co";
 const user = {
@@ -225,6 +226,7 @@ test("Search, preview, import draft, local edits, reload and deletion never publ
   await expect(page.getByText("Esta historia aún no existe")).toBeVisible();
   await page.goto("/admin/animes");
   page.once("dialog", (dialog) => dialog.accept());
+  await revealAnimeActions(page);
   await page.getByRole("button", { name: "Eliminar", exact: true }).click();
   await expect(
     page.getByText("Todavía no hay fichas. Crea tu primer anime."),

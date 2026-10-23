@@ -1,3 +1,4 @@
+import { revealAnimeActions } from "./helpers/anime-actions";
 import { test, expect, type Page } from "@playwright/test";
 const root = "https://yoru-auth-test.supabase.co",
   animeId = "00000000-0000-0000-0000-000000000010",
@@ -229,6 +230,7 @@ test("admin changes metadata and cover, reloads, replaces/removes image and publ
   await expect.poll(() => state.deletes.length).toBe(1);
   await page.getByRole("button", { name: "Cancelar", exact: true }).click();
   page.once("dialog", (d) => d.accept());
+  await revealAnimeActions(page);
   await page
     .getByRole("button", { name: "Publicar ficha", exact: true })
     .click();
@@ -271,6 +273,7 @@ test("admin changes metadata and cover, reloads, replaces/removes image and publ
   await expect.poll(() => state.deletes.length).toBe(2);
   await page.getByRole("button", { name: "Cancelar", exact: true }).click();
   page.once("dialog", (d) => d.accept());
+  await revealAnimeActions(page);
   await page
     .getByRole("button", { name: "Retirar ficha", exact: true })
     .click();
@@ -344,6 +347,7 @@ test("independent season/episode publication shows public metadata without ficti
   await setup(page);
   await page.goto("/admin");
   page.once("dialog", (d) => d.accept());
+  await revealAnimeActions(page);
   await page
     .getByRole("button", { name: "Publicar ficha", exact: true })
     .click();

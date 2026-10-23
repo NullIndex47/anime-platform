@@ -1845,3 +1845,33 @@ td {
   .featured-slide { animation: none; }
   .featured-indicator span { transition: none; }
 }
+
+/* Compact catalog management and interactive hierarchy. */
+.yoru-admin .admin-anime-list table { border-spacing: 0 8px; }
+.yoru-admin .admin-anime-list th:first-child { width: 33%; }
+.yoru-admin .admin-anime-list th:nth-child(2) { width: 15%; }
+.yoru-admin .admin-anime-list th:nth-child(3) { width: 12%; }
+.yoru-admin .admin-anime-list th, .yoru-admin .admin-anime-list td { padding: 12px; }
+.yoru-admin .admin-anime-list td:first-child strong { font-size: 18px; font-weight: 650; line-height: 1.4; }
+.yoru-admin .admin-anime-list .admin-primary { flex-basis: auto; font-size: 13px; padding-inline: 12px; }
+.yoru-admin .anime-row-actions { gap: 8px; }
+.yoru-admin .admin-row-menu { position: relative; margin-left: auto; }
+.yoru-admin .admin-row-menu summary { display: grid; place-items: center; width: 44px; min-height: 44px; border: 1px solid #51574a; border-radius: 8px; cursor: pointer; list-style: none; }
+.yoru-admin .admin-row-menu summary::-webkit-details-marker { display: none; }
+.yoru-admin .admin-row-menu summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.yoru-admin .admin-row-menu[open] summary { color: var(--accent); border-color: var(--accent); }
+.yoru-admin .admin-row-menu-items { position: absolute; right: 0; top: calc(100% + 6px); z-index: 3; display: grid; gap: 8px; width: 230px; max-width: calc(100vw - 64px); padding: 12px; background: #1b1d1b; border: 1px solid #51574a; border-radius: 10px; box-shadow: 0 12px 32px #0008; }
+.yoru-admin .admin-row-menu-items .button { width: 100%; text-align: left; justify-content: flex-start; }
+.yoru-admin .admin-breadcrumbs { gap: 6px; margin-bottom: 18px; }
+.yoru-admin .admin-breadcrumbs button { min-height: 44px; padding: 8px 10px; border-radius: 6px; text-align: left; color: #d6d9ce; overflow-wrap: anywhere; max-width: 100%; }
+.yoru-admin .admin-breadcrumbs button:hover:not(:disabled) { color: var(--accent); background: #e9b55d0b; }
+.yoru-admin .admin-breadcrumbs [aria-current="page"] { color: var(--accent); font-weight: 650; padding: 8px 10px; border-radius: 6px; background: #e9b55d0c; }
+.yoru-admin .episode-save-actions { grid-column: 1 / -1; }
+@media (max-width: 760px) {
+  .yoru-admin .admin-anime-list tr { margin: 10px 0; padding: 16px; gap: 12px; }
+  .yoru-admin .admin-anime-list td { padding: 0; }
+  .yoru-admin .admin-anime-list td:first-child strong { font-size: 19px; }
+  .yoru-admin .admin-anime-list .anime-row-actions .admin-primary { flex-basis: 100%; }
+  .yoru-admin .admin-breadcrumbs { font-size: 13px; gap: 2px; }
+  .yoru-admin .admin-breadcrumbs button, .yoru-admin .admin-breadcrumbs [aria-current="page"] { padding-inline: 6px; }
+}
