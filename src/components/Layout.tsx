@@ -7,7 +7,6 @@ import {
   Search,
   Menu,
   X,
-  Moon,
   ArrowRight,
   ChevronDown,
   LayoutDashboard,
@@ -37,8 +36,7 @@ export function Layout() {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [location.pathname]);
   useEffect(() => {
-    if (!/^\/demo\/anime\/[^/]+\/episodio\/[^/]+\/?$/.test(location.pathname))
-      document.title = "YORU — Descubre otro mundo";
+    document.title = "YORU — Descubre otro mundo";
   }, [location.pathname]);
   useEffect(() => {
     setUserMenu(false);
@@ -212,35 +210,35 @@ export function Layout() {
         </footer>
       ) : (
         <footer className="site-footer">
-          <div className="container footer-top">
-            <div>
-              <Link to="/" aria-label="Yoru, inicio">
-                <Logo />
-              </Link>
-              <p>Historias que se quedan contigo.</p>
+          <div className="container footer-inner">
+            <div className="footer-top">
+              <div className="footer-brand">
+                <Link to="/" aria-label="Yoru, inicio">
+                  <Logo />
+                </Link>
+                <p>
+                  Descubre anime, explora sus historias y encuentra tu próximo universo.
+                </p>
+              </div>
+              <nav
+                className="footer-navigation"
+                aria-label="Navegación del pie de página"
+              >
+                <h2>Navegación</h2>
+                <div className="footer-links">
+                  <Link to="/catalogo">
+                    Explorar <ArrowUpRight size={15} aria-hidden="true" />
+                  </Link>
+                  <Link to={session ? "/cuenta" : "/iniciar-sesion"}>
+                    {session ? "Mi perfil" : "Acceder con Google"}
+                    <ArrowUpRight size={15} aria-hidden="true" />
+                  </Link>
+                </div>
+              </nav>
             </div>
-            <div className="footer-links">
-              <Link to="/catalogo">Explorar</Link>
-              <Link to="/demo">Demostración ficticia</Link>
-              <Link to="/demo/admin">Panel demo</Link>
-              <Link to={session ? "/cuenta" : "/iniciar-sesion"}>
-                {session ? "Mi perfil" : "Acceder con Google"}
-              </Link>
+            <div className="footer-bottom">
+              <span>© 2026 Yoru · Historias que se quedan contigo.</span>
             </div>
-            <div className="footer-note">
-              <Moon size={18} />
-              <span>
-                Hecho para quienes miran
-                <br />
-                más allá de los créditos.
-              </span>
-            </div>
-          </div>
-          <div className="container footer-bottom">
-            <span>© 2026 Yoru · Un universo por descubrir</span>
-            <span className="demo-tag">
-              YORU <span /> Catálogo público
-            </span>
           </div>
         </footer>
       )}

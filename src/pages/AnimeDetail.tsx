@@ -9,6 +9,8 @@ import {
   type PublicAnime,
 } from "../services/persistent-catalog";
 import { CatalogState } from "../components/PublicAnimeCard";
+import CoverImage from "../components/CoverImage";
+import PublicSeasons from "../components/PublicSeasons";
 import NotFound from "./NotFound";
 export default function AnimeDetail() {
   const { animeId = "" } = useParams();
@@ -68,16 +70,16 @@ export default function AnimeDetail() {
       </Link>
       <section className="detail-hero">
         <div className="detail-art">
-          <img
-            src="/artwork/catalog-placeholder.svg"
-            alt="Ilustración provisional original de YORU"
+          <CoverImage
+            path={anime.cover_path}
+            alt={
+              anime.cover_path
+                ? `Portada de ${anime.title}`
+                : "Ilustración provisional original de YORU"
+            }
             width="600"
             height="850"
           />
-          <div className="detail-art-title">
-            <span>CATÁLOGO YORU</span>
-            <strong>{anime.title}</strong>
-          </div>
         </div>
         <div className="detail-copy">
           <span className="eyebrow">
@@ -124,6 +126,7 @@ export default function AnimeDetail() {
           </dl>
         </div>
       </section>
+      <PublicSeasons key={anime.id} animeId={anime.id} />
       <section className="panel public-availability">
         <span className="eyebrow">DISPONIBILIDAD</span>
         <h2>Ficha de información</h2>

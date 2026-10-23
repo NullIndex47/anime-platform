@@ -2,6 +2,7 @@ import { requireClient } from "../auth/session";
 import { CatalogError, databaseError } from "./catalog-admin";
 import type { AnimeMetadata } from "../types/catalog";
 export interface SeasonRow {
+  published?: boolean;
   id: string;
   anime_id: string;
   season_number: number;
@@ -16,6 +17,7 @@ export interface EpisodeInput {
   authorization_reference: string | null;
 }
 export interface EpisodeRow extends EpisodeInput {
+  published?: boolean;
   id: string;
   anime_id: string;
   season_id: string;
@@ -154,3 +156,30 @@ export const episodeStatus = (row: EpisodeInput) =>
   row.authorization_reference?.trim()
     ? "Preparado · privado"
     : "Borrador · fuente pendiente";
+
+export async function setSeasonPublication(
+  animeId: string,
+  id: string,
+  published: boolean,
+) {
+  const { error } = await requireClient().rpc("yoru_set_season_publication", {
+    p_anime_id: animeId,
+    p_id: id,
+    p_published: published,
+  });
+  databaseError(error);
+}
+export async function setEpisodePublication(
+  animeId: string,
+  seasonId: string,
+  id: string,
+  published: boolean,
+) {
+  const { error } = await requireClient().rpc("yoru_set_episode_publication", {
+    p_anime_id: animeId,
+    p_season_id: seasonId,
+    p_id: id,
+    p_published: published,
+  });
+  databaseError(error);
+}

@@ -1,3 +1,4 @@
+import { revealAnimeActions } from "./helpers/anime-actions";
 import { test, expect, type Page } from "@playwright/test";
 const root = "https://yoru-auth-test.supabase.co";
 const id = "00000000-0000-0000-0000-000000000010";
@@ -18,6 +19,9 @@ const row = {
   playback_available: false,
 };
 async function mocks(page: Page) {
+  await page.route(`${root}/rest/v1/public_seasons**`, (r) =>
+    r.fulfill({ json: [] }),
+  );
   await page.route(`${root}/rest/v1/rpc/yoru_search_anime**`, (r) =>
     r.fulfill({ json: [row] }),
   );
@@ -108,7 +112,7 @@ test("loading, error retry, empty and unavailable routes", async ({ page }) => {
   await page.getByRole("button", { name: "Reintentar", exact: true }).click();
   await expect(
     page.getByRole("heading", {
-      name: "Las próximas historias están en camino",
+      name: "Tu próximo universo.",
     }),
   ).toBeVisible();
   await page.route(`${root}/rest/v1/public_anime**`, (r) =>
@@ -184,23 +188,27 @@ test("admin confirmation publishes metadata without episodes and withdraws it", 
   );
   await page.goto("/admin");
   page.once("dialog", (d) => d.dismiss());
+  await revealAnimeActions(page);
   await page
     .getByRole("button", { name: "Publicar ficha", exact: true })
     .click();
   expect(mutations).toBe(0);
   page.once("dialog", (d) => d.accept());
+  await revealAnimeActions(page);
   await page
     .getByRole("button", { name: "Publicar ficha", exact: true })
     .click();
   await expect(
     page.getByText("Ficha publicada en el catálogo público."),
   ).toBeVisible();
+  await revealAnimeActions(page);
   await page.getByRole("link", { name: "Ver ficha pública" }).click();
   await expect(
     page.getByRole("heading", { name: row.title + "." }),
   ).toBeVisible();
   await page.goto("/admin");
   page.once("dialog", (d) => d.accept());
+  await revealAnimeActions(page);
   await page
     .getByRole("button", { name: "Retirar ficha", exact: true })
     .click();

@@ -1,3 +1,4 @@
+import { revealAnimeActions } from "./helpers/anime-actions";
 import { test, expect, type Page } from "@playwright/test";
 const endpoint = "https://yoru-auth-test.supabase.co";
 const user = {
@@ -53,6 +54,9 @@ async function setup(page: Page, admin = true, enabled = true) {
   );
   await page.route(`${endpoint}/rest/v1/rpc/yoru_is_admin`, (route) =>
     route.fulfill({ json: admin }),
+  );
+  await page.route(`${endpoint}/rest/v1/rpc/yoru_cover_cleanup`, (route) =>
+    route.fulfill({ json: [] }),
   );
   await page.route(`${endpoint}/rest/v1/catalog_anime**`, (route) =>
     route.fulfill({ json: rows }),
@@ -222,9 +226,10 @@ test("Search, preview, import draft, local edits, reload and deletion never publ
   await expect(page.getByText("Esta historia aún no existe")).toBeVisible();
   await page.goto("/admin/animes");
   page.once("dialog", (dialog) => dialog.accept());
+  await revealAnimeActions(page);
   await page.getByRole("button", { name: "Eliminar", exact: true }).click();
   await expect(
-    page.getByText("Todavía no hay animes reales importados."),
+    page.getByText("Todavía no hay fichas. Crea tu primer anime."),
   ).toBeVisible();
 });
 test("Empty results and 429 cooldown have explicit, recoverable states", async ({

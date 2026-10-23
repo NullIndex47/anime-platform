@@ -4,6 +4,7 @@ import type { AnimeMetadata } from "../types/catalog";
 // Public DTO: stable UUIDs are the future relation keys for user features.
 // Never reuse administrative rows or episode payloads in public components.
 export interface PublicAnime extends AnimeMetadata {
+  cover_path?: string | null;
   id: string;
   playback_available: boolean;
 }
@@ -17,7 +18,7 @@ export interface PublicFilters {
 }
 export const PAGE_SIZE = 24;
 export const publicColumns =
-  "id,title,title_romaji,title_english,title_native,synopsis,genres,year,format,airing_status,score,studio,total_episodes,playback_available";
+  "id,title,title_romaji,title_english,title_native,synopsis,genres,year,format,airing_status,score,studio,total_episodes,playback_available,cover_path";
 export const emptyFilters: PublicFilters = {
   query: "",
   genre: "",
@@ -117,4 +118,56 @@ export async function loadCatalogFacets(
     .abortSignal(signal || AbortSignal.timeout(15000));
   check(error);
   return data || { genres: [], years: [] };
+}
+
+export interface PublicSeason {
+  id: string;
+  anime_id: string;
+  season_number: number;
+  name: string | null;
+}
+export interface PublicEpisode {
+  id: string;
+  anime_id: string;
+  season_id: string;
+  episode_number: number;
+  title: string;
+  description: string | null;
+  playback_available: boolean;
+}
+export async function loadPublicSeasons(
+  client: SupabaseClient,
+  animeId: string,
+  signal: AbortSignal,
+  offset = 0,
+) {
+  const { data, error } = await client
+    .from("public_seasons")
+    .select("id,anime_id,season_number,name")
+    .eq("anime_id", animeId)
+    .order("season_number")
+    .range(offset, offset + 24)
+    .abortSignal(signal);
+  check(error);
+  return (data || []) as PublicSeason[];
+}
+export async function loadPublicEpisodes(
+  client: SupabaseClient,
+  animeId: string,
+  seasonId: string,
+  signal: AbortSignal,
+  offset = 0,
+) {
+  const { data, error } = await client
+    .from("public_episodes")
+    .select(
+      "id,anime_id,season_id,episode_number,title,description,playback_available",
+    )
+    .eq("anime_id", animeId)
+    .eq("season_id", seasonId)
+    .order("episode_number")
+    .range(offset, offset + 24)
+    .abortSignal(signal);
+  check(error);
+  return (data || []) as PublicEpisode[];
 }

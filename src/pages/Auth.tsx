@@ -24,7 +24,7 @@ export default function Auth() {
     <div className="container auth-page auth-access-page">
       <section className="auth-visual">
         <img
-          src="/artwork/aoi.svg"
+          src="/artwork/auth-landscape.svg"
           alt="Paisaje original de un valle entre montañas"
         />
         <div className="auth-visual-shade" />
