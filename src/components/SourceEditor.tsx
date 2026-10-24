@@ -1,3 +1,6 @@
+import { useEffect, useState } from "react";
+import PrivateSourcePreview from "./PrivateSourcePreview";
+import { safePlaybackUrl } from "../services/playback";
 import type { PlaybackSource } from "../services/playback";
 export default function SourceEditor({
   sources,
@@ -8,6 +11,8 @@ export default function SourceEditor({
   disabled: boolean;
   onChange: (s: PlaybackSource[]) => void;
 }) {
+  const [preview, setPreview] = useState<PlaybackSource | null>(null);
+  useEffect(() => setPreview(null), [sources]);
   const update = (index: number, change: Partial<PlaybackSource>) =>
     onChange(sources.map((s, i) => (i === index ? { ...s, ...change } : s)));
   const move = (index: number, direction: number) => {
@@ -73,6 +78,14 @@ export default function SourceEditor({
             <button
               type="button"
               className="button button-outline"
+              disabled={!safePlaybackUrl(s.player_type, s.url)}
+              onClick={() => setPreview(s)}
+            >
+              Probar servidor {i + 1}
+            </button>
+            <button
+              type="button"
+              className="button button-outline"
               disabled={!i}
               onClick={() => move(i, -1)}
             >
@@ -116,6 +129,13 @@ export default function SourceEditor({
       >
         Añadir servidor
       </button>
+      {preview && (
+        <PrivateSourcePreview
+          key={preview.id}
+          source={preview}
+          stop={() => setPreview(null)}
+        />
+      )}
     </fieldset>
   );
 }

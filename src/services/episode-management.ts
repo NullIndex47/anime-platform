@@ -55,7 +55,7 @@ export async function listEpisodes(
   animeId: string,
   seasonId: string,
 ): Promise<EpisodeRow[]> {
-  const { data, error } = await requireClient().rpc("yoru_admin_episodes", {
+  const { data, error } = await requireClient().rpc("yoru_admin_episodes_v2", {
     p_anime_id: animeId,
     p_season_id: seasonId,
   });
@@ -114,7 +114,7 @@ export async function saveEpisode(
   data: EpisodeInput,
 ) {
   validateEpisode(data);
-  const { error } = await requireClient().rpc("yoru_save_episode", {
+  const { error } = await requireClient().rpc("yoru_save_episode_v2", {
     p_anime_id: animeId,
     p_season_id: seasonId,
     p_id: id,

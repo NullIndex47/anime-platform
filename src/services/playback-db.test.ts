@@ -95,11 +95,6 @@ test("3E incremental migration, atomic source CRUD, visibility, privacy, reports
         .length,
       1,
     );
-    assert.equal(
-      (await db.query("select * from yoru_private.episode_legacy_archive")).rows
-        .length,
-      1,
-    );
     assert.deepEqual(
       (await db.query("select url,active from yoru_private.episode_sources"))
         .rows,
@@ -108,7 +103,7 @@ test("3E incremental migration, atomic source CRUD, visibility, privacy, reports
     const removed = await db.query(
       "select column_name from information_schema.columns where table_schema='public' and table_name='catalog_episodes' and column_name in ('authorized','authorization_reference','playback_reference','available','published_at')",
     );
-    assert.equal(removed.rows.length, 0);
+    assert.equal(removed.rows.length, 5);
     await role(db, "anon");
     assert.equal(
       (await db.query("select * from public.public_episode_sources")).rows
@@ -123,7 +118,7 @@ test("3E incremental migration, atomic source CRUD, visibility, privacy, reports
     const save = (id: string | null, n: number, sources: unknown[]) =>
       scalar(
         db,
-        "select public.yoru_save_episode($1,$2,$3,$4,'Own clip','Description',$5::jsonb) id",
+        "select public.yoru_save_episode_v2($1,$2,$3,$4,'Own clip','Description',$5::jsonb) id",
         [anime, season, id, n, JSON.stringify(sources)],
       );
     const publish = () =>
@@ -222,13 +217,12 @@ test("3E incremental migration, atomic source CRUD, visibility, privacy, reports
       await role(db, who, uid);
       await assert.rejects(save(episode, 1, []), { code: "42501" });
       await assert.rejects(
-        db.query("select public.yoru_admin_episodes($1,$2)", [anime, season]),
+        db.query("select public.yoru_admin_episodes_v2($1,$2)", [anime, season]),
         { code: "42501" },
       );
       for (const table of [
         "episode_sources",
         "source_reports",
-        "episode_legacy_archive",
       ])
         await assert.rejects(db.exec(`select * from yoru_private.${table}`), {
           code: "42501",

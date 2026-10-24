@@ -58,7 +58,7 @@ async function setup(page: Page) {
   await page.route(`${root}/rest/v1/rpc/**`, (r) => {
     const name = new URL(r.request().url()).pathname.split("/").at(-1),
       b = r.request().postDataJSON();
-    if (name === "yoru_admin_episodes") return r.fulfill({ json: [{ id: "episode-1", anime_id: animeId, season_id: seasonId, episode_number: 1, title: "El comienzo", description: "Descripción manual", sources: [], published: publishedEpisode }] });
+    if (name === "yoru_admin_episodes_v2") return r.fulfill({ json: [{ id: "episode-1", anime_id: animeId, season_id: seasonId, episode_number: 1, title: "El comienzo", description: "Descripción manual", sources: [], published: publishedEpisode }] });
     if (name === "yoru_source_reports") return r.fulfill({ json: [] });
     if (name === "yoru_is_admin") return r.fulfill({ json: true });
     if (name === "yoru_cover_cleanup") return r.fulfill({ json: cleanup });

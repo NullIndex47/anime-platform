@@ -2,33 +2,13 @@
 
 Ruta pública estable: `/episodio/<UUID>`. La ficha enlaza cada episodio publicado a su reproductor. Cambiar números o títulos no rompe la URL. Se incluyen servidores, navegación anterior/siguiente dentro de la temporada, lista paginada de episodios, errores y estado sin fuentes. No hay ficheros de vídeo en los assets de producción, proxy, descarga ni retransmisión.
 
-## Migración manual después de revisar la PR
+## Transición compatible con 3D
 
-Archivo exacto: [`supabase/migrations/20261024220000_episode_sources.sql`](../supabase/migrations/20261024220000_episode_sources.sql).
+Seguir la [guía corta de transición](phase-3e-transition.md): usa el Supabase actual, un respaldo restaurado y verificado localmente, un solo SQL de expansión y recuperación volviendo al frontend 3D.
 
-1. Revisar y respaldar la base de datos. Comprobar que están aplicadas las migraciones previas, incluida `20261023181000_anime_covers.sql`. Probar primero en un proyecto Supabase de staging, con el mismo historial de migraciones y una cuenta administradora de prueba.
-2. En Supabase SQL Editor, abrir una consulta nueva, pegar **el archivo completo** y ejecutarlo una sola vez. Incluye `begin`/`commit`, permisos y recarga del esquema de PostgREST. No ejecutar fragmentos sueltos ni editar migraciones anteriores. Si falla, hacer `rollback` en esa sesión y revisar el error antes de reintentar.
-3. Registrar su versión en vuestro proceso habitual de migraciones. Esta PR no ejecuta `supabase db push` ni SQL remoto.
-4. Probar el frontend de esta rama contra staging. La firma de `yoru_save_episode` cambia y desaparecen columnas antiguas: coordinar el cambio de SQL y aplicación en la futura publicación aprobada. El administrador de la versión 3D no es compatible con la nueva firma. No aplicar esta migración a la base compartida de producción para probar una Preview de rama mientras 3D siga sirviendo su administración.
-5. En `/admin`, abrir un episodio existente: revisar las fuentes migradas, sustituir referencias antiguas por URLs compatibles y activarlas solo si se dispone de permiso de uso. Guardar conserva el ID y devuelve el episodio a borrador; volver a publicarlo explícitamente. Publicar también la temporada y la ficha si procede. Nada migrado se activa automáticamente.
-6. Comprobar ficha → episodio, recarga directa y cambio de servidor. Retirar la temporada o ficha y confirmar que la URL de episodio ya no muestra contenido.
+La migración aún no aplicada de esta PR se ha sustituido por una expansión. Conserva todas las columnas, datos y RPC de 3D. Los RPC de 3E son `yoru_save_episode_v2` y `yoru_admin_episodes_v2`; no dependen de campos antiguos. No hay archivo destructivo ni borrado físico en esta fase. La limpieza se pospone a otra migración tras cerrar la ventana de recuperación.
 
-Comprobaciones de solo lectura en SQL Editor, con el rol de mantenimiento:
-
-```sql
--- Debe coincidir con el número de episodios anteriores, sin borrar IDs ni referencias.
-select count(*) from public.catalog_episodes;
-select count(*) from yoru_private.episode_legacy_archive;
--- Las referencias heredadas se conservan aquí y sus fuentes empiezan inactivas.
-select episode_id, name, active from yoru_private.episode_sources order by episode_id, priority;
--- Solo campos públicos necesarios para reproducir.
-select * from public.public_episode_sources limit 20;
-select id, playback_available from public.public_anime limit 20;
-```
-
-`episode_legacy_archive` conserva las referencias administrativas originales y los valores antiguos para revisión y recuperación manual; no tiene permisos REST ni funciones públicas de lectura. `authorized`, `authorization_reference`, `playback_reference`, `available` y `published_at` se retiran de `catalog_episodes`, RPC, tipos y formularios. Las pruebas de migraciones históricas siguen verificando sus antiguos contratos sin modificar esos archivos SQL.
-
-La migración es transaccional; un fallo revierte la operación completa. Después de aplicarla no se debe desplegar el frontend 3D como rollback aislado: el contrato cambió. Para recuperación, respaldar primero y restaurar conjuntamente aplicación y base, o preparar una migración compensatoria revisada utilizando el archivo privado. No se incluye un rollback destructivo automático.
+En el editor hay «Probar servidor»: reproduce para la sesión administradora sin guardar, activar ni publicar contenido. Permite validar vídeos propios/autorizados en una ficha de prueba privada dentro del mismo Supabase.
 
 ## Proveedores y seguridad
 
@@ -61,15 +41,15 @@ Dentro del editor de cada episodio, «Reportes de servidores» muestra hasta 100
 npm ci
 npm test
 npm run test:e2e -- --workers=2
-npm run test:e2e:worker -- tests/player.spec.ts tests/catalog-admin.spec.ts --grep 'Worker API|public detail|three servers|private episode|admin manages|signed-in visitor|long episode' --workers=2
+npm run test:e2e:worker -- tests/player.spec.ts tests/transition.spec.ts tests/catalog-admin.spec.ts --grep 'Worker API|public detail|three servers|private episode|admin manages|signed-in visitor|long episode|real 3D bundle' --workers=2
 npm run build
 ```
 
-Resultados locales del 24 de octubre de 2026:
+Resultados locales del 25 de octubre de 2026, con expansión compatible:
 
-- `npm test`: **51 correctas**.
-- Suite completa Vite: **118 correctas**, 2 casos exclusivos de Worker omitidos.
-- Selección de reproductor y API con Wrangler local: **14 correctas**, sin omisiones. Incluye reproducción real, entrada/salida de pantalla completa nativa, nombres largos y recarga directa con fallback SPA.
+- `npm test`: **53 correctas**.
+- Suite completa Vite: **122 correctas**, 2 casos exclusivos de Worker omitidos.
+- Selección de reproductor y API con Wrangler local: **16 correctas**, sin omisiones. Incluye reproducción real, entrada/salida de pantalla completa nativa, nombres largos y recarga directa con fallback SPA.
 - `npm run build`: correcto; también se recompila al iniciar la suite Worker. Permanece el aviso de tamaño del bundle principal; no se añadieron dependencias de producción.
 - Ningún vídeo en `dist/`. Sin cambios en migraciones anteriores, SQL remoto, fusión ni despliegue manual de Production.
 
@@ -77,7 +57,7 @@ Las pruebas SQL usan PostgreSQL local (PGlite), roles reales y el historial comp
 
 Playwright usa un vídeo WebM original de 4 segundos en `tests/fixtures`, fuera de los assets publicados. Verifica cuadros de vídeo y tiempo de reproducción, una/tres fuentes, desmontaje mientras reproduce, iframe, fallo y recuperación, episodio sin fuentes, 404 privado, navegación, recarga, edición/orden/activación/eliminación y anchos 320–1440. Las respuestas de Supabase y proveedores se controlan en el navegador; la autorización y privacidad se verifican además en PostgreSQL. El clip y las respuestas iframe no representan una reproducción remota real del proveedor.
 
-Pendiente manual tras aplicar SQL **en staging**: comprobar las políticas en Supabase hospedado, Google OAuth real y reproducción remota autorizada con cada proveedor (restricciones por dominio, región, cookies, permisos, códec y disponibilidad dependen de él). No se afirma que un iframe permita detectar todos los fallos. La red del entorno de trabajo permite repositorios y paquetes, pero no los dominios de vídeo externos para esta comprobación.
+Pendiente manual, siguiendo la guía y sin crear otro proyecto: comprobar las políticas en Supabase hospedado, Google OAuth real y reproducción remota autorizada con cada proveedor (restricciones por dominio, región, cookies, permisos, códec y disponibilidad dependen de él). No se afirma que un iframe permita detectar todos los fallos. La red del entorno de trabajo permite repositorios y paquetes, pero no los dominios de vídeo externos para esta comprobación.
 
 Para una futura Preview con nombre de rama, registrar `https://feat-yoru-phase-3e-player-anime-platform.cuentagaming1304.workers.dev/auth/callback` en Supabase Authentication → URL Configuration → Redirect URLs. Este origen exacto queda admitido y probado en el cliente. No usar comodines. Los bindings públicos de Supabase y los flujos Google existentes se conservan. No se ha fusionado ni desplegado Production manualmente.
 

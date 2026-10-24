@@ -1,4 +1,13 @@
 begin;
+-- Unapplied PR migration: expand only. The 3D columns/RPC stay intact.
+set local lock_timeout='5s';
+do $$ begin
+ if to_regprocedure('public.yoru_save_episode(uuid,uuid,uuid,integer,text,text,text,boolean,text)') is null
+   or to_regclass('public.public_episodes') is null
+   or not exists(select 1 from information_schema.columns where table_schema='public' and table_name='catalog_anime' and column_name='cover_path') then
+   raise exception 'Apply the complete 3D migration history first';
+ end if;
+end $$;
 -- Administrative data stays outside the exposed REST schema.
 create table yoru_private.episode_sources (
   id uuid primary key default gen_random_uuid(),
@@ -28,13 +37,8 @@ revoke all on function yoru_private.valid_playback_url(text,text) from public,an
 alter table yoru_private.episode_sources add constraint active_source_valid
   check(not active or yoru_private.valid_playback_url(player_type,url));
 
--- Preserve old internal values for review; remove every runtime dependency.
-create table yoru_private.episode_legacy_archive as
-select id as episode_id,authorized,authorization_reference,playback_reference,available,published_at
-from public.catalog_episodes;
-alter table yoru_private.episode_legacy_archive enable row level security;
-alter table yoru_private.episode_legacy_archive force row level security;
-revoke all on yoru_private.episode_legacy_archive from public,anon,authenticated;
+-- Copy legacy links for review; never activate them. Retain the original columns
+-- and the exact 3D RPC body/grants so old tabs and frontend rollback still work.
 insert into yoru_private.episode_sources(episode_id,name,player_type,url,priority,active)
 select id,'Fuente migrada · revisar',
  case when playback_reference ~ '\.(mp4|webm)$' then 'html5' else 'iframe' end,
@@ -55,12 +59,9 @@ from yoru_private.episode_sources v join public.public_episodes e on e.id=v.epis
 revoke all on public.public_episode_sources from public,anon,authenticated;
 grant select on public.public_episode_sources to anon,authenticated;
 
--- Replace, do not overload, the obsolete RPC signature.
-drop function public.yoru_save_episode(uuid,uuid,uuid,integer,text,text,text,boolean,text);
-alter table public.catalog_episodes drop column authorized,drop column authorization_reference,
-  drop column playback_reference,drop column available,drop column published_at;
-
-create function public.yoru_save_episode(p_anime_id uuid,p_season_id uuid,p_id uuid,
+-- Separate names avoid ambiguous PostgREST resolution with optional arguments.
+-- 3E never reads/writes legacy playback or authorization columns.
+create function public.yoru_save_episode_v2(p_anime_id uuid,p_season_id uuid,p_id uuid,
  p_number integer,p_title text,p_description text default null,p_sources jsonb default '[]') returns uuid
 language plpgsql security definer set search_path='' as $$
 declare result uuid; item jsonb; n integer:=0; source_id uuid;
@@ -97,7 +98,7 @@ begin
    and not exists(select 1 from jsonb_array_elements(p_sources) x where x->>'id'=v.id::text);
  return result;
 end $$;
-create function public.yoru_admin_episodes(p_anime_id uuid,p_season_id uuid) returns jsonb
+create function public.yoru_admin_episodes_v2(p_anime_id uuid,p_season_id uuid) returns jsonb
 language plpgsql stable security definer set search_path='' as $$
 begin
  perform yoru_private.require_admin();
@@ -108,8 +109,8 @@ begin
     from yoru_private.episode_sources v where v.episode_id=e.id),'[]'::jsonb)) order by e.episode_number)
  from public.catalog_episodes e where e.anime_id=p_anime_id and e.season_id=p_season_id),'[]'::jsonb);
 end $$;
-revoke all on function public.yoru_save_episode(uuid,uuid,uuid,integer,text,text,jsonb),public.yoru_admin_episodes(uuid,uuid) from public,anon,authenticated;
-grant execute on function public.yoru_save_episode(uuid,uuid,uuid,integer,text,text,jsonb),public.yoru_admin_episodes(uuid,uuid) to authenticated;
+revoke all on function public.yoru_save_episode_v2(uuid,uuid,uuid,integer,text,text,jsonb),public.yoru_admin_episodes_v2(uuid,uuid) from public,anon,authenticated;
+grant execute on function public.yoru_save_episode_v2(uuid,uuid,uuid,integer,text,text,jsonb),public.yoru_admin_episodes_v2(uuid,uuid) to authenticated;
 
 create table yoru_private.source_reports (
  id uuid primary key default gen_random_uuid(),
@@ -153,5 +154,26 @@ begin
 end $$;
 revoke all on function public.yoru_report_source(uuid,text),public.yoru_source_reports(uuid),public.yoru_resolve_source_report(uuid) from public,anon,authenticated;
 grant execute on function public.yoru_report_source(uuid,text),public.yoru_source_reports(uuid),public.yoru_resolve_source_report(uuid) to authenticated;
+-- Read-only, owner-only post-apply check. No user IDs, URLs or private evidence.
+create function yoru_private.phase3e_status() returns jsonb
+language sql stable set search_path='' as $$
+ with checks as (select
+   to_regprocedure('public.yoru_save_episode(uuid,uuid,uuid,integer,text,text,text,boolean,text)') is not null as legacy_rpc,
+   to_regprocedure('public.yoru_save_episode_v2(uuid,uuid,uuid,integer,text,text,jsonb)') is not null as player_rpc,
+   to_regprocedure('public.yoru_admin_episodes_v2(uuid,uuid)') is not null as player_read,
+   (select count(*)=5 from information_schema.columns where table_schema='public' and table_name='catalog_episodes'
+     and column_name in ('authorized','authorization_reference','playback_reference','available','published_at')) as legacy_columns,
+   (select count(*)=2 and bool_and(relrowsecurity and relforcerowsecurity) from pg_class
+     where oid in ('yoru_private.episode_sources'::regclass,'yoru_private.source_reports'::regclass)) as rls,
+   not has_table_privilege('anon','yoru_private.episode_sources','SELECT') and
+   not has_table_privilege('authenticated','yoru_private.episode_sources','SELECT') and
+   not has_table_privilege('anon','yoru_private.source_reports','SELECT') and
+   not has_table_privilege('authenticated','yoru_private.source_reports','SELECT') as private_tables)
+ select jsonb_build_object('version','3e-expand-v1','ok',legacy_rpc and player_rpc and player_read and legacy_columns and rls and private_tables,
+   'legacy_rpc',legacy_rpc,'player_rpc',player_rpc,'legacy_columns',legacy_columns,'rls',rls,'private_tables',private_tables,
+   'episodes',(select count(*) from public.catalog_episodes),
+   'active_sources',(select count(*) from yoru_private.episode_sources where active)) from checks
+$$;
+revoke all on function yoru_private.phase3e_status() from public,anon,authenticated;
 notify pgrst,'reload schema';
 commit;

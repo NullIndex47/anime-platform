@@ -175,7 +175,7 @@ test("save and create next skips occupied numbers, clears private fields, locks 
   await page.getByLabel("URL del servidor").fill("https://media.w3.org/2010/05/sintel/trailer.mp4");
   await page.getByLabel("Fuente activa").check();
   const calls = state.calls.filter(
-    (name) => name === "yoru_save_episode",
+    (name) => name === "yoru_save_episode_v2",
   ).length;
   await page
     .getByRole("button", { name: "Guardar y crear siguiente", exact: true })
@@ -193,7 +193,7 @@ test("save and create next skips occupied numbers, clears private fields, locks 
     "Episodio 4",
   );
   expect(
-    state.calls.filter((name) => name === "yoru_save_episode"),
+    state.calls.filter((name) => name === "yoru_save_episode_v2"),
   ).toHaveLength(calls + 1);
   expect(
     state.episodes().filter((row) => row.episode_number === 2),
@@ -231,7 +231,7 @@ test("duplicate numbers retain input and a failed refresh never repeats a succes
     "No perder este título",
   );
   expect(
-    state.calls.filter((name) => name === "yoru_save_episode"),
+    state.calls.filter((name) => name === "yoru_save_episode_v2"),
   ).toHaveLength(0);
   await page.getByLabel("Número de episodio").fill("2");
   state.failNextEpisodeRead();
@@ -253,7 +253,7 @@ test("duplicate numbers retain input and a failed refresh never repeats a succes
     .click();
   await expect(page.getByLabel("Número de episodio")).toHaveValue("4");
   expect(
-    state.calls.filter((name) => name === "yoru_save_episode"),
+    state.calls.filter((name) => name === "yoru_save_episode_v2"),
   ).toHaveLength(1);
   expect(
     state.episodes().filter((row) => row.episode_number === 2),

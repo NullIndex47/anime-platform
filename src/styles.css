@@ -1911,3 +1911,5 @@ td {
 
 .player-page { overflow-wrap: anywhere; }
 .player-page .button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.private-source-preview { min-width: 0; overflow-wrap: anywhere; }
+.private-source-preview .video-frame { margin-block: 1rem; }

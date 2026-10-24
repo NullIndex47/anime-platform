@@ -43,7 +43,7 @@ export async function setupManagement(
     const name = r.request().url().split("/").at(-1)!;
     const b = r.request().postDataJSON();
     calls.push(name);
-    if (name === "yoru_admin_episodes") {
+    if (name === "yoru_admin_episodes_v2") {
       reads.push("catalog_episodes");
       if (failEpisodeRead) { failEpisodeRead = false; return r.fulfill({ status: 500, json: { message: "Read failed" } }); }
       return r.fulfill({ json: episodes.filter(e => e.anime_id === b.p_anime_id && e.season_id === b.p_season_id).sort((a,b) => Number(a.episode_number)-Number(b.episode_number)) });
@@ -91,7 +91,7 @@ export async function setupManagement(
     }
     if (name === "yoru_delete_episode")
       episodes = episodes.filter((e) => e.id !== b.p_id);
-    if (name === "yoru_save_episode") {
+    if (name === "yoru_save_episode_v2") {
       if (
         episodes.some(
           (episode) =>
