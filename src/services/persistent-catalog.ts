@@ -135,6 +135,19 @@ export interface PublicEpisode {
   description: string | null;
   playback_available: boolean;
 }
+// Public playback projection: no administrative flags, timestamps or legacy fields.
+export interface PublicPlaybackSource {
+  id: string;
+  episode_id: string;
+  name: string;
+  player_type: "iframe" | "html5";
+  url: string;
+  priority: number;
+}
+export const publicEpisodeColumns =
+  "id,anime_id,season_id,episode_number,title,description,playback_available";
+export const publicPlaybackSourceColumns =
+  "id,episode_id,name,player_type,url,priority";
 export async function loadPublicSeasons(
   client: SupabaseClient,
   animeId: string,
@@ -160,9 +173,7 @@ export async function loadPublicEpisodes(
 ) {
   const { data, error } = await client
     .from("public_episodes")
-    .select(
-      "id,anime_id,season_id,episode_number,title,description,playback_available",
-    )
+    .select(publicEpisodeColumns)
     .eq("anime_id", animeId)
     .eq("season_id", seasonId)
     .order("episode_number")

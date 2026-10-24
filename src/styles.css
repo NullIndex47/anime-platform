@@ -1875,3 +1875,41 @@ td {
   .yoru-admin .admin-breadcrumbs { font-size: 13px; gap: 2px; }
   .yoru-admin .admin-breadcrumbs button, .yoru-admin .admin-breadcrumbs [aria-current="page"] { padding-inline: 6px; }
 }
+
+/* Episode playback: provider connections are mounted only after explicit consent. */
+.player-page h1 { font-size: clamp(1.5rem, 3vw, 2.5rem); margin: .75rem 0 1.75rem; }
+.player-page > .eyebrow { margin-top: 2rem; }
+.watch-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 1.5rem; align-items: start; }
+.watch-layout > * { min-width: 0; }
+.video-frame { aspect-ratio: 16 / 9; background: #080a0f; border: 1px solid #3b3020; border-radius: 16px; overflow: hidden; display: grid; place-items: center; text-align: center; }
+.video-frame iframe, .video-frame video { width: 100%; height: 100%; border: 0; background: #000; }
+.player-placeholder { padding: 1rem; max-width: 520px; }
+.player-placeholder h2 { font-size: clamp(1.1rem, 2vw, 1.7rem); margin: .5rem 0; }
+.player-placeholder p, .player-help { color: #abaeb9; font-size: .9rem; }
+.server-selector, .episode-navigation { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1.25rem 0; }
+.episode-navigation { justify-content: space-between; border-top: 1px solid #30313c; padding-top: 1.25rem; }
+.season-navigation { padding: 1.25rem; }
+.season-navigation h2 { font-size: 1.15rem; }
+.season-navigation ol { list-style: none; padding: 0; }
+.season-navigation li a { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding: 1rem .6rem; border-radius: 8px; }
+.season-navigation li a[aria-current] { background: #302719; color: #ffc66d; }
+.season-navigation li span { color: #c69b60; font-variant-numeric: tabular-nums; }
+.season-navigation li small { width: 100%; color: #a5a5ae; }
+.source-editor { min-width: 0; padding: 1rem; border: 1px solid #45404a; border-radius: 12px; }
+.source-editor > p { font-size: .85rem; color: #b0b0bc; }
+.source-fields { padding: 1rem; margin: 1rem 0; min-width: 0; }
+.source-fields input, .source-fields select { max-width: 100%; }
+.report-form { padding: 1rem; display: grid; gap: 1rem; margin-top: 1rem; }
+@media (max-width: 1000px) { .watch-layout { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 480px) { .player-placeholder p { font-size: .75rem; margin: .4rem 0; } .player-placeholder { padding: .5rem; } .player-placeholder .button { min-height: 36px; padding: .4rem .8rem; } .source-fields { padding: .65rem; } }
+.yoru-admin .metadata-editor > .source-editor, .yoru-admin .metadata-editor > section { grid-column: 1 / -1; }
+.video-frame > iframe, .video-frame > video { min-height: 0; min-width: 0; }
+
+.player-page > p.eyebrow { display: block; }
+.source-editor .authorization-check input { accent-color: #e9b654; }
+.player-page > .text-link, .player-page button.text-link { font-size: .9rem; }
+
+.player-page { overflow-wrap: anywhere; }
+.player-page .button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.private-source-preview { min-width: 0; overflow-wrap: anywhere; }
+.private-source-preview .video-frame { margin-block: 1rem; }

@@ -34,11 +34,7 @@ const episode = (number: number) => ({
   episode_number: number,
   title: `Episodio existente ${number}`,
   description: null,
-  playback_reference: null,
-  authorized: false,
-  authorization_reference: null,
-  available: false,
-  published_at: null,
+  sources: [],
   published: false,
 });
 async function setup(page: Page) {
@@ -173,15 +169,13 @@ test("save and create next skips occupied numbers, clears private fields, locks 
   await page
     .getByLabel("Descripción (opcional)")
     .fill("Descripción del episodio anterior");
-  await page
-    .getByLabel("Referencia privada de reproducción (opcional)")
-    .fill("PRIVATE TEST ONLY");
-  await page
-    .getByLabel("Referencia del permiso o licencia (opcional)")
-    .fill("LICENSE TEST ONLY");
-  await page.getByLabel(/Confirmo que la fuente/).check();
+  await page.getByRole("button", { name: "Añadir servidor", exact: true }).click();
+  await page.getByLabel("Nombre del servidor").fill("Vídeo de prueba");
+  await page.getByLabel("Tipo de reproductor").selectOption("html5");
+  await page.getByLabel("URL del servidor").fill("https://media.w3.org/2010/05/sintel/trailer.mp4");
+  await page.getByLabel("Fuente activa").check();
   const calls = state.calls.filter(
-    (name) => name === "yoru_save_episode",
+    (name) => name === "yoru_save_episode_v2",
   ).length;
   await page
     .getByRole("button", { name: "Guardar y crear siguiente", exact: true })
@@ -194,24 +188,18 @@ test("save and create next skips occupied numbers, clears private fields, locks 
   await expect(page.getByLabel("Título del episodio")).toHaveValue("");
   await expect(page.getByLabel("Título del episodio")).toBeFocused();
   await expect(page.getByLabel("Descripción (opcional)")).toHaveValue("");
-  await expect(
-    page.getByLabel("Referencia privada de reproducción (opcional)"),
-  ).toHaveValue("");
-  await expect(
-    page.getByLabel("Referencia del permiso o licencia (opcional)"),
-  ).toHaveValue("");
-  await expect(page.getByLabel(/Confirmo que la fuente/)).not.toBeChecked();
+  await expect(page.getByLabel("URL del servidor")).toHaveCount(0);
   await expect(breadcrumbs(page).locator('[aria-current="page"]')).toHaveText(
     "Episodio 4",
   );
   expect(
-    state.calls.filter((name) => name === "yoru_save_episode"),
+    state.calls.filter((name) => name === "yoru_save_episode_v2"),
   ).toHaveLength(calls + 1);
   expect(
     state.episodes().filter((row) => row.episode_number === 2),
   ).toHaveLength(1);
   expect(
-    state.episodes().find((row) => row.episode_number === 2)?.authorized,
+    (state.episodes().find((row) => row.episode_number === 2)?.sources as { active: boolean }[])[0].active,
   ).toBe(true);
   await page.getByLabel("Título del episodio").fill("El siguiente episodio");
   await page
@@ -243,7 +231,7 @@ test("duplicate numbers retain input and a failed refresh never repeats a succes
     "No perder este título",
   );
   expect(
-    state.calls.filter((name) => name === "yoru_save_episode"),
+    state.calls.filter((name) => name === "yoru_save_episode_v2"),
   ).toHaveLength(0);
   await page.getByLabel("Número de episodio").fill("2");
   state.failNextEpisodeRead();
@@ -265,7 +253,7 @@ test("duplicate numbers retain input and a failed refresh never repeats a succes
     .click();
   await expect(page.getByLabel("Número de episodio")).toHaveValue("4");
   expect(
-    state.calls.filter((name) => name === "yoru_save_episode"),
+    state.calls.filter((name) => name === "yoru_save_episode_v2"),
   ).toHaveLength(1);
   expect(
     state.episodes().filter((row) => row.episode_number === 2),

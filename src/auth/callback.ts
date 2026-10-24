@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 const origins = new Set([
+  'https://feat-yoru-phase-3e-player-anime-platform.cuentagaming1304.workers.dev',
   'https://feat-yoru-phase-3d-real-catalog-anime-platform.cuentagaming1304.workers.dev',
   'https://feat-yoru-public-catalog-anime-platform.cuentagaming1304.workers.dev',
   'https://feat-yoru-admin-ux-improvements-anime-platform.cuentagaming1304.workers.dev',

@@ -18,6 +18,7 @@
     "moderation:generate": "node --import tsx scripts/generate-username-moderation.ts",
     "moderation:check": "node --import tsx scripts/generate-username-moderation.ts --check",
     "deploy:preview": "node --import tsx scripts/deploy-preview.ts",
+    "phase3e:backup": "node --import tsx scripts/phase3e-backup.ts",
     "preview:dry-run": "node --import tsx scripts/deploy-preview.ts --dry-run",
     "production:dry-run": "node --import tsx scripts/deploy-production.ts --dry-run"
   },
