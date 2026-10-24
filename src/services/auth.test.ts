@@ -64,3 +64,9 @@ test('3C Preview accepts only its exact HTTPS origin', () => {
   assert.equal(callbackUrl(preview), `${preview}/auth/callback`);
   for (const candidate of [`${preview}.evil.example`, preview.replace('https:', 'http:'), `${preview}:444`, `${preview}@evil.example`]) assert.throws(() => callbackUrl(candidate));
 });
+
+test('3E player Preview accepts only its exact HTTPS origin', () => {
+  const preview = 'https://feat-yoru-phase-3e-player-anime-platform.cuentagaming1304.workers.dev';
+  assert.equal(callbackUrl(preview), `${preview}/auth/callback`);
+  for (const candidate of [`${preview}.evil.example`, preview.replace('https:', 'http:'), `${preview}:444`, `${preview}@evil.example`]) assert.throws(() => callbackUrl(candidate));
+});

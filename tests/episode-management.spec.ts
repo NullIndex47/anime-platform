@@ -104,21 +104,14 @@ test("Manual anime, seasons and episodes CRUD, private preparation, reload and d
   await page.getByLabel("Número de episodio").fill("2");
   await page.getByLabel("Título del episodio").fill("Piloto editado");
   await page.getByLabel("Descripción (opcional)").fill("Descripción privada");
-  await page.getByLabel(/Confirmo que la fuente/).check();
-  await page
-    .getByRole("button", { name: "Guardar episodio privado", exact: true })
-    .click();
-  await expect(page.getByRole("alert")).toContainText("fuente legítima");
-  await page
-    .getByLabel("Referencia privada de reproducción (opcional)")
-    .fill("PRIVATE TEST ONLY");
-  await page
-    .getByLabel("Referencia del permiso o licencia (opcional)")
-    .fill("Owner license TEST ONLY");
-  await page.getByLabel(/Confirmo que la fuente/).check();
-  await page
-    .getByRole("button", { name: "Guardar episodio privado", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Añadir servidor", exact: true }).click();
+  await page.getByLabel("Nombre del servidor").fill("Fuente autorizada");
+  await page.getByLabel("URL del servidor").fill("javascript:alert(1)");
+  await page.getByLabel("Fuente activa").check();
+  await page.getByRole("button", { name: "Guardar episodio privado", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("URL HTTPS");
+  await page.getByLabel("URL del servidor").fill("https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ");
+  await page.getByRole("button", { name: "Guardar episodio privado", exact: true }).click();
   await expect(
     page.getByText("Preparado · privado", { exact: true }),
   ).toBeVisible();

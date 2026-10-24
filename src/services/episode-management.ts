@@ -1,3 +1,4 @@
+import { validateSource, type PlaybackSource } from "./playback";
 import { requireClient } from "../auth/session";
 import { CatalogError, databaseError } from "./catalog-admin";
 import type { AnimeMetadata } from "../types/catalog";
@@ -12,17 +13,13 @@ export interface EpisodeInput {
   episode_number: number;
   title: string;
   description: string | null;
-  playback_reference: string | null;
-  authorized: boolean;
-  authorization_reference: string | null;
+  sources: PlaybackSource[];
 }
 export interface EpisodeRow extends EpisodeInput {
   published?: boolean;
   id: string;
   anime_id: string;
   season_id: string;
-  available: boolean;
-  published_at: string | null;
 }
 export const emptyMetadata: AnimeMetadata = {
   title: "",
@@ -58,12 +55,10 @@ export async function listEpisodes(
   animeId: string,
   seasonId: string,
 ): Promise<EpisodeRow[]> {
-  const { data, error } = await requireClient()
-    .from("catalog_episodes")
-    .select("*")
-    .eq("anime_id", animeId)
-    .eq("season_id", seasonId)
-    .order("episode_number");
+  const { data, error } = await requireClient().rpc("yoru_admin_episodes", {
+    p_anime_id: animeId,
+    p_season_id: seasonId,
+  });
   databaseError(error);
   return data || [];
 }
@@ -103,20 +98,14 @@ export function validateEpisode(data: EpisodeInput) {
     data.episode_number > 2147483647 ||
     !data.title.trim() ||
     data.title.trim().length > 250 ||
-    (data.description?.length || 0) > 10000 ||
-    (data.playback_reference?.trim().length || 0) > 2000 ||
-    (data.authorization_reference?.trim().length || 0) > 2000
+    (data.description?.length || 0) > 10000
   )
     throw new CatalogError(
       "Revisa el número, el título y la longitud de los textos del episodio.",
     );
-  if (
-    data.authorized &&
-    (!data.playback_reference?.trim() || !data.authorization_reference?.trim())
-  )
-    throw new CatalogError(
-      "Para confirmar la autorización, indica una fuente legítima y su referencia de permiso.",
-    );
+  if (data.sources.length > 20)
+    throw new CatalogError("Máximo 20 servidores por episodio.");
+  data.sources.forEach(validateSource);
 }
 export async function saveEpisode(
   animeId: string,
@@ -132,9 +121,10 @@ export async function saveEpisode(
     p_number: data.episode_number,
     p_title: data.title.trim(),
     p_description: data.description,
-    p_playback_reference: data.playback_reference,
-    p_authorized: data.authorized,
-    p_authorization_reference: data.authorization_reference,
+    p_sources: data.sources.map((source, priority) => ({
+      ...source,
+      priority,
+    })),
   });
   databaseError(error);
 }
@@ -151,9 +141,7 @@ export async function deleteEpisode(
   databaseError(error);
 }
 export const episodeStatus = (row: EpisodeInput) =>
-  row.authorized &&
-  row.playback_reference?.trim() &&
-  row.authorization_reference?.trim()
+  row.sources?.some((s) => s.active)
     ? "Preparado · privado"
     : "Borrador · fuente pendiente";
 
