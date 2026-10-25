@@ -1,5 +1,4 @@
 import { requireClient } from "../auth/session";
-import { databaseError } from "./catalog-admin";
 export interface PlaybackSource {
   id: string;
   name: string;
@@ -55,10 +54,45 @@ export function validateSource(s: PlaybackSource) {
       "Revisa el servidor: usa una URL HTTPS oficial de un proveedor permitido. Los enlaces antiguos no compatibles deben permanecer inactivos.",
     );
 }
+export class ReportSubmissionError extends Error {
+  constructor(
+    public reason: "session" | "limit" | "unavailable" | "network",
+    message: string,
+  ) {
+    super(message);
+  }
+}
+export function reportSubmissionError(error: {
+  code?: string;
+  status?: number;
+}): ReportSubmissionError {
+  if (
+    error.status === 401 ||
+    ["PGRST301", "PGRST302", "PGRST303", "42501"].includes(error.code || "")
+  )
+    return new ReportSubmissionError(
+      "session",
+      "Tu sesión ha caducado. Vuelve a iniciar sesión para reportar.",
+    );
+  if (error.code === "22023")
+    return new ReportSubmissionError(
+      "limit",
+      "Ya has reportado esta fuente o alcanzado el límite. Inténtalo más tarde.",
+    );
+  if (error.code === "P0002")
+    return new ReportSubmissionError(
+      "unavailable",
+      "Este servidor ya no está disponible. Prueba otro servidor.",
+    );
+  return new ReportSubmissionError(
+    "network",
+    "No se pudo enviar el reporte. Inténtalo de nuevo.",
+  );
+}
 export async function reportSource(sourceId: string, reason: string) {
   const { error } = await requireClient().rpc("yoru_report_source", {
     p_source_id: sourceId,
     p_reason: reason,
   });
-  databaseError(error);
+  if (error) throw reportSubmissionError(error);
 }

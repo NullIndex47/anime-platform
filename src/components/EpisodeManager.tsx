@@ -280,7 +280,7 @@ const EpisodeManager = forwardRef<EpisodeNavigation, Props>(
         </div>
         {editing && (
           <form
-            className="metadata-editor admin-form-panel"
+            className="metadata-editor admin-form-panel episode-editor"
             onSubmit={(e) => {
               e.preventDefault();
               const submitter = (e.nativeEvent as SubmitEvent)
@@ -288,7 +288,12 @@ const EpisodeManager = forwardRef<EpisodeNavigation, Props>(
               save(submitter?.value === "next");
             }}
           >
-            <h4>{editing === "new" ? "Nuevo episodio" : "Editar episodio"}</h4>
+            <div className="episode-editor-heading">
+              <span className="section-kicker">Datos del episodio</span>
+              <h4>
+                {editing === "new" ? "Nuevo episodio" : "Editar episodio"}
+              </h4>
+            </div>
             <label>
               Número de episodio
               <input
@@ -321,6 +326,7 @@ const EpisodeManager = forwardRef<EpisodeNavigation, Props>(
               <textarea
                 disabled={busy || !!pending}
                 maxLength={10000}
+                rows={3}
                 value={input.description || ""}
                 onChange={(e) =>
                   setInput({ ...input, description: e.target.value || null })
@@ -334,9 +340,8 @@ const EpisodeManager = forwardRef<EpisodeNavigation, Props>(
             />
             {editing !== "new" && <SourceReports episodeId={editing.id} />}
             <p className="info-notice">
-              Añade únicamente fuentes propias o con permiso de inserción.
-              Guardar devuelve el episodio a borrador; revisa los servidores y
-              publica después.
+              Guardar devuelve el episodio a borrador. Publica después de
+              revisarlo.
             </p>
             {pending && (
               <p className="info-notice">
@@ -359,7 +364,7 @@ const EpisodeManager = forwardRef<EpisodeNavigation, Props>(
               </button>
               <button
                 type="button"
-                className="button button-outline"
+                className="button button-outline episode-cancel"
                 disabled={busy}
                 onClick={showList}
               >

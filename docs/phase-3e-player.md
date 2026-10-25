@@ -2,6 +2,10 @@
 
 Ruta pública estable: `/episodio/<UUID>`. La ficha enlaza cada episodio publicado a su reproductor. Cambiar números o títulos no rompe la URL. Se incluyen servidores, navegación anterior/siguiente dentro de la temporada, lista paginada de episodios, errores y estado sin fuentes. No hay ficheros de vídeo en los assets de producción, proxy, descarga ni retransmisión.
 
+## Reproductor y edición
+
+Ver [pulido visual, sesiones de reportes y capturas nuevas](phase-3e-visual-polish.md). Si ya aplicaste la expansión, estas mejoras de interfaz no requieren más SQL.
+
 ## Transición compatible con 3D
 
 Seguir la [guía corta de transición](phase-3e-transition.md): usa el Supabase actual, un respaldo restaurado y verificado localmente, un solo SQL de expansión y recuperación volviendo al frontend 3D.
@@ -41,15 +45,15 @@ Dentro del editor de cada episodio, «Reportes de servidores» muestra hasta 100
 npm ci
 npm test
 npm run test:e2e -- --workers=2
-npm run test:e2e:worker -- tests/player.spec.ts tests/transition.spec.ts tests/catalog-admin.spec.ts --grep 'Worker API|public detail|three servers|private episode|admin manages|signed-in visitor|long episode|real 3D bundle' --workers=2
+npm run test:e2e:worker -- tests/player.spec.ts tests/player-polish.spec.ts tests/transition.spec.ts tests/catalog-admin.spec.ts --grep 'Worker API|public detail|three servers|private episode|admin manages|signed-in|long episode|report session|compact editor|admin report rows|pending session|real 3D bundle' --workers=2
 npm run build
 ```
 
 Resultados locales del 25 de octubre de 2026, con expansión compatible:
 
-- `npm test`: **53 correctas**.
-- Suite completa Vite: **122 correctas**, 2 casos exclusivos de Worker omitidos.
-- Selección de reproductor y API con Wrangler local: **16 correctas**, sin omisiones. Incluye reproducción real, entrada/salida de pantalla completa nativa, nombres largos y recarga directa con fallback SPA.
+- `npm test`: **54 correctas**.
+- Suite completa Vite: **136 correctas**, 2 casos exclusivos de Worker omitidos.
+- Selección de reproductor y API con Wrangler local: **30 correctas**, sin omisiones. Incluye reproducción real, entrada/salida de pantalla completa nativa, nombres largos y recarga directa con fallback SPA.
 - `npm run build`: correcto; también se recompila al iniciar la suite Worker. Permanece el aviso de tamaño del bundle principal; no se añadieron dependencias de producción.
 - Ningún vídeo en `dist/`. Sin cambios en migraciones anteriores, SQL remoto, fusión ni despliegue manual de Production.
 

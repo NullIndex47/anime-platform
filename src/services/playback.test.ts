@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { safePlaybackUrl, validateSource } from "./playback";
+import {
+  safePlaybackUrl,
+  validateSource,
+  reportSubmissionError,
+} from "./playback";
 export const invalidPlaybackUrls = [
   "javascript:alert(1)",
   "data:text/html,<script>alert(1)</script>",
@@ -57,4 +61,13 @@ test("inactive legacy links can be reviewed but cannot be activated without vali
   };
   validateSource(source);
   assert.throws(() => validateSource({ ...source, active: true }));
+});
+
+test("report failures distinguish expired sessions, rate limits and unavailable sources without exposing backend details", () => {
+  for (const code of ["PGRST301", "PGRST302", "PGRST303", "42501"])
+    assert.equal(reportSubmissionError({ code }).reason, "session");
+  assert.equal(reportSubmissionError({ status: 401 }).reason, "session");
+  assert.equal(reportSubmissionError({ code: "22023" }).reason, "limit");
+  assert.equal(reportSubmissionError({ code: "P0002" }).reason, "unavailable");
+  assert.equal(reportSubmissionError({ code: "offline" }).reason, "network");
 });

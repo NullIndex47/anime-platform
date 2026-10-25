@@ -1,3 +1,17 @@
+import {
+  ArrowLeft,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  Flag,
+  ListVideo,
+  LoaderCircle,
+  Play,
+  Server,
+  VideoOff,
+} from "lucide-react";
+import SourceProblemReport from "../components/SourceProblemReport";
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import { requireClient } from "../auth/session";
@@ -10,7 +24,7 @@ import {
   type PublicEpisode,
   type PublicSeason,
 } from "../services/persistent-catalog";
-import { reportSource, safePlaybackUrl } from "../services/playback";
+import { safePlaybackUrl } from "../services/playback";
 import NotFound from "./NotFound";
 interface PlayerData {
   anime: PublicAnime;
@@ -40,10 +54,8 @@ function Player({ id }: { id: string }) {
     [listBusy, setListBusy] = useState(false);
   const [previous, setPrevious] = useState<PublicEpisode | null>(null),
     [next, setNext] = useState<PublicEpisode | null>(null);
-  const [reportOpen, setReportOpen] = useState(false),
-    [reason, setReason] = useState("no_playback"),
-    [reportMessage, setReportMessage] = useState(""),
-    [reportBusy, setReportBusy] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const reportTriggerRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const c = new AbortController(),
       signal = AbortSignal.any([c.signal, AbortSignal.timeout(15000)]);
@@ -149,13 +161,15 @@ function Player({ id }: { id: string }) {
   }, [data, listPage, retry]);
   if (loading)
     return (
-      <div className="container page-space" role="status">
+      <div className="container page-space player-load" role="status">
+        <LoaderCircle className="is-spinning" size={30} aria-hidden="true" />{" "}
         Cargando episodio…
       </div>
     );
   if (error)
     return (
-      <div className="container page-space">
+      <div className="container page-space player-load">
+        <CircleAlert size={32} aria-hidden="true" />
         <p role="alert">{error}</p>
         <button className="button" onClick={() => setRetry((v) => v + 1)}>
           Reintentar
@@ -166,36 +180,46 @@ function Player({ id }: { id: string }) {
   const source = data.sources.find((s) => s.id === selected);
   return (
     <div className="container page-space player-page">
-      <Link className="text-link" to={`/anime/${data.anime.id}`}>
-        ← Volver a la ficha del anime
-      </Link>
-      <p className="eyebrow">
-        {data.anime.title} · Temporada {data.season.season_number}
-        {data.season.name && ` · ${data.season.name}`}
-      </p>
-      <h1>
-        Episodio {data.episode.episode_number} · {data.episode.title}
-      </h1>
+      <header className="watch-heading">
+        <Link
+          className="watch-back"
+          to={`/anime/${data.anime.id}`}
+          aria-label="← Volver a la ficha del anime"
+        >
+          <ArrowLeft size={17} aria-hidden="true" /> Volver a la ficha del anime
+        </Link>
+        <Link className="watch-anime" to={`/anime/${data.anime.id}`}>
+          {data.anime.title}
+        </Link>
+        <p className="watch-season">
+          Temporada {data.season.season_number}
+          {data.season.name && ` · ${data.season.name}`}
+        </p>
+        <h1>
+          Episodio {data.episode.episode_number} · {data.episode.title}
+        </h1>
+      </header>
       <div className="watch-layout">
         <section aria-label="Reproductor y servidores">
           <div className="video-frame">
             {!source ? (
-              <p>Este episodio todavía no está disponible</p>
+              <div className="player-empty">
+                <VideoOff size={36} aria-hidden="true" />
+                <h2>Este episodio todavía no está disponible</h2>
+                <p>Vuelve más adelante.</p>
+              </div>
             ) : !started || failed ? (
-              <div className="player-placeholder">
-                <span className="eyebrow">{source.name}</span>
-                <h2>
-                  {failed
-                    ? "No se pudo reproducir este vídeo"
-                    : "Tu episodio está listo"}
-                </h2>
-                <p>
-                  {failed
-                    ? "Reintenta o selecciona otro servidor disponible."
-                    : "Al reproducir, conectarás con el proveedor externo seleccionado."}
-                </p>
+              <div
+                className={`player-placeholder ${failed ? "player-placeholder-error" : ""}`}
+              >
+                <span className="player-source-chip">
+                  <Server size={14} aria-hidden="true" />
+                  {source.name}
+                </span>
+                {failed && <CircleAlert size={28} aria-hidden="true" />}
                 <button
-                  className="button"
+                  className="player-play"
+                  aria-label={failed ? "Reintentar vídeo" : "Reproducir"}
                   onClick={() => {
                     setStarted(true);
                     setFailed(false);
@@ -203,8 +227,18 @@ function Player({ id }: { id: string }) {
                     setAttempt((v) => v + 1);
                   }}
                 >
-                  {failed ? "Reintentar vídeo" : "Reproducir"}
+                  <Play size={30} fill="currentColor" aria-hidden="true" />
                 </button>
+                <h2>
+                  {failed
+                    ? "No se pudo reproducir este vídeo"
+                    : "Todo listo para reproducir"}
+                </h2>
+                <p>
+                  {failed
+                    ? "Reintenta o elige otro servidor."
+                    : "Reproductor externo · Tú eliges cuándo empezar"}
+                </p>
               </div>
             ) : source.player_type === "iframe" ? (
               <iframe
@@ -235,100 +269,71 @@ function Player({ id }: { id: string }) {
             )}
           </div>
           {started && waiting && !failed && (
-            <p role="status">
-              Cargando reproductor… Si tarda demasiado, prueba otro servidor.
+            <p className="playback-status" role="status">
+              <LoaderCircle
+                size={16}
+                className="is-spinning"
+                aria-hidden="true"
+              />{" "}
+              Cargando reproductor…
             </p>
           )}
           {failed && (
-            <p role="alert">
-              Fuente no disponible. Puedes cambiar de servidor.
+            <p className="playback-status is-error" role="alert">
+              <CircleAlert size={16} aria-hidden="true" /> Fuente no disponible.
+              Puedes cambiar de servidor.
             </p>
           )}
           {!!data.sources.length && (
-            <>
-              <div
-                className="server-selector"
-                role="group"
-                aria-label="Servidores disponibles"
-              >
-                {data.sources.map((s) => (
-                  <button
-                    className={`button ${selected === s.id ? "" : "button-outline"}`}
-                    aria-pressed={selected === s.id}
-                    key={s.id}
-                    onClick={() => {
-                      if (s.id === selected) return;
-                      setSelected(s.id);
-                      setStarted(false);
-                      setFailed(false);
-                      setWaiting(false);
-                      setReportOpen(false);
-                      setReportMessage("");
-                    }}
-                  >
-                    {s.name}
-                  </button>
-                ))}
+            <div className="player-source-bar">
+              <div className="server-section">
+                <span className="section-kicker">
+                  <Server size={15} aria-hidden="true" /> Servidores
+                </span>
+                <div
+                  className="server-selector"
+                  role="group"
+                  aria-label="Servidores disponibles"
+                >
+                  {data.sources.map((s) => (
+                    <button
+                      className="server-choice"
+                      aria-pressed={selected === s.id}
+                      key={s.id}
+                      onClick={() => {
+                        if (s.id === selected) return;
+                        setSelected(s.id);
+                        setStarted(false);
+                        setFailed(false);
+                        setWaiting(false);
+                        setReportOpen(false);
+                      }}
+                    >
+                      <span className="server-dot" aria-hidden="true" />
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <p className="player-help">
-                Si el proveedor no reproduce el vídeo, selecciona otro servidor.
-                Algunos reproductores externos no permiten detectar sus errores.
-              </p>
               <button
-                className="text-link"
-                onClick={() => {
-                  setReportOpen((v) => !v);
-                  setReportMessage("");
-                }}
+                className="report-trigger"
+                ref={reportTriggerRef}
+                aria-expanded={reportOpen}
+                onClick={() => setReportOpen((v) => !v)}
               >
-                Reportar problema
+                <Flag size={15} aria-hidden="true" /> Reportar problema
               </button>
-            </>
+            </div>
           )}
           {reportOpen && source && (
-            <form
-              className="panel report-form"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (reportBusy) return;
-                setReportBusy(true);
-                try {
-                  const { data: session } =
-                    await requireClient().auth.getSession();
-                  if (!session.session) {
-                    setReportMessage(
-                      "Inicia sesión con Google para enviar un reporte.",
-                    );
-                    return;
-                  }
-                  await reportSource(source.id, reason);
-                  setReportMessage("Reporte enviado. Gracias por avisar.");
-                } catch {
-                  setReportMessage(
-                    "No se pudo enviar. Es posible que ya hayas reportado esta fuente o alcanzado el límite. Inténtalo más tarde.",
-                  );
-                } finally {
-                  setReportBusy(false);
-                }
+            <SourceProblemReport
+              sourceId={source.id}
+              serverName={source.name}
+              close={() => {
+                setReportOpen(false);
+                reportTriggerRef.current?.focus();
               }}
-            >
-              <label>
-                Problema con {source.name}
-                <select
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                >
-                  <option value="no_playback">El vídeo no se reproduce</option>
-                  <option value="wrong_video">Vídeo incorrecto</option>
-                  <option value="other">Otro problema</option>
-                </select>
-              </label>
-              <button className="button" disabled={reportBusy}>
-                Enviar reporte
-              </button>
-              <p role="status">{reportMessage}</p>
-              <Link to="/iniciar-sesion">Acceder con Google</Link>
-            </form>
+            />
           )}
           <nav
             className="episode-navigation"
@@ -338,21 +343,34 @@ function Player({ id }: { id: string }) {
               <Link
                 className="button button-outline"
                 to={`/episodio/${previous.id}`}
+                aria-label="← Episodio anterior"
               >
-                ← Episodio anterior
+                <ArrowLeft size={18} aria-hidden="true" />
+                <span>
+                  <small>Anterior</small>Episodio {previous.episode_number}
+                </span>
               </Link>
             ) : (
               <button className="button button-outline" disabled>
+                <ArrowLeft size={18} aria-hidden="true" />
                 Episodio anterior
               </button>
             )}
             {next ? (
-              <Link className="button" to={`/episodio/${next.id}`}>
-                Episodio siguiente →
+              <Link
+                className="button"
+                to={`/episodio/${next.id}`}
+                aria-label="Episodio siguiente →"
+              >
+                <span>
+                  <small>Siguiente</small>Episodio {next.episode_number}
+                </span>
+                <ArrowRight size={18} aria-hidden="true" />
               </Link>
             ) : (
               <button className="button" disabled>
                 Episodio siguiente
+                <ArrowRight size={18} aria-hidden="true" />
               </button>
             )}
           </nav>
@@ -362,7 +380,13 @@ function Player({ id }: { id: string }) {
           className="panel season-navigation"
           aria-label="Episodios de la temporada"
         >
-          <h2>Temporada {data.season.season_number}</h2>
+          <div className="season-navigation-heading">
+            <ListVideo size={21} aria-hidden="true" />
+            <div>
+              <span className="section-kicker">Episodios</span>
+              <h2>Temporada {data.season.season_number}</h2>
+            </div>
+          </div>
           {listBusy && <p role="status">Cargando episodios…</p>}
           {listError && (
             <p role="alert">
@@ -381,8 +405,15 @@ function Player({ id }: { id: string }) {
                     to={`/episodio/${e.id}`}
                   >
                     <span>{String(e.episode_number).padStart(2, "0")}</span>
-                    <strong>{e.title}</strong>
-                    {!e.playback_available && <small>No disponible</small>}
+                    <div>
+                      <strong>{e.title}</strong>
+                      {e.id === id ? (
+                        <small>Estás viendo este episodio</small>
+                      ) : (
+                        !e.playback_available && <small>No disponible</small>
+                      )}
+                    </div>
+                    {e.id === id && <Play size={14} aria-hidden="true" />}
                   </Link>
                 </li>
               ))}
@@ -394,14 +425,14 @@ function Player({ id }: { id: string }) {
               disabled={listBusy || !listPage}
               onClick={() => setListPage((v) => v - 1)}
             >
-              Anteriores
+              <ChevronLeft size={16} aria-hidden="true" /> Anteriores
             </button>
             <button
               className="button button-outline"
               disabled={listBusy || !listMore}
               onClick={() => setListPage((v) => v + 1)}
             >
-              Más episodios
+              Más episodios <ChevronRight size={16} aria-hidden="true" />
             </button>
           </nav>
         </aside>
