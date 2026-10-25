@@ -2,7 +2,9 @@
 
 YORU permite crear fichas manuales en Supabase, publicarlas en Inicio y Explorar y organizar sus temporadas y episodios desde `/admin`. Google OAuth y los perfiles conservan su implementación existente. AniList sigue desactivado hasta obtener autorización.
 
-La FASE 3D elimina las rutas, fixtures, comentarios, panel y reproductor de demostración. Añade portadas individuales en Supabase Storage y publicación independiente de temporadas y episodios. No incluye reproducción integrada ni inventa puntuaciones o disponibilidad.
+La FASE 3E añade reproducción integrada de episodios publicados con múltiples servidores administrables, iframe oficial o vídeo HTML5 externo y reportes de problemas. No aloja vídeos en Cloudflare. Consulta la [transición compatible con 3D usando el Supabase actual](docs/phase-3e-transition.md) antes de aplicar el SQL de expansión. La FASE 3D incorporó portadas individuales y publicación independiente de temporadas y episodios, y retiró la demo.
+
+El [estado actual de proveedores y su SQL incremental](docs/phase-3e-providers.md) documenta Streamtape desactivado, los proveedores pendientes y las pruebas reales frente a las simuladas. No reejecutes la expansión 3E si ya está aplicada.
 
 ## Preparar y probar
 

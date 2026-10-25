@@ -1,3 +1,6 @@
+import SourceEditor from "./SourceEditor";
+import SourceReports from "./SourceReports";
+import { enabledPlaybackUrl } from "../services/playback";
 import {
   forwardRef,
   useEffect,
@@ -22,9 +25,7 @@ const emptyEpisode: EpisodeInput = {
   episode_number: 1,
   title: "",
   description: null,
-  playback_reference: null,
-  authorized: false,
-  authorization_reference: null,
+  sources: [],
 };
 export function nextEpisodeNumber(rows: EpisodeRow[], start = 1) {
   const occupied = new Set(rows.map((row) => row.episode_number));
@@ -36,9 +37,7 @@ const episodeInput = (row: EpisodeInput): EpisodeInput => ({
   episode_number: row.episode_number,
   title: row.title,
   description: row.description,
-  playback_reference: row.playback_reference,
-  authorized: row.authorized,
-  authorization_reference: row.authorization_reference,
+  sources: row.sources || [],
 });
 export interface EpisodeNavigation {
   canLeave: () => boolean;
@@ -219,6 +218,7 @@ const EpisodeManager = forwardRef<EpisodeNavigation, Props>(
           season.id,
           editing === "new" ? null : editing.id,
           input,
+          baseline.sources,
         );
         const saved = { number: input.episode_number, next };
         cache.delete(season.id);
@@ -282,7 +282,7 @@ const EpisodeManager = forwardRef<EpisodeNavigation, Props>(
         </div>
         {editing && (
           <form
-            className="metadata-editor admin-form-panel"
+            className="metadata-editor admin-form-panel episode-editor"
             onSubmit={(e) => {
               e.preventDefault();
               const submitter = (e.nativeEvent as SubmitEvent)
@@ -290,7 +290,12 @@ const EpisodeManager = forwardRef<EpisodeNavigation, Props>(
               save(submitter?.value === "next");
             }}
           >
-            <h4>{editing === "new" ? "Nuevo episodio" : "Editar episodio"}</h4>
+            <div className="episode-editor-heading">
+              <span className="section-kicker">Datos del episodio</span>
+              <h4>
+                {editing === "new" ? "Nuevo episodio" : "Editar episodio"}
+              </h4>
+            </div>
             <label>
               Número de episodio
               <input
@@ -323,58 +328,22 @@ const EpisodeManager = forwardRef<EpisodeNavigation, Props>(
               <textarea
                 disabled={busy || !!pending}
                 maxLength={10000}
+                rows={3}
                 value={input.description || ""}
                 onChange={(e) =>
                   setInput({ ...input, description: e.target.value || null })
                 }
               />
             </label>
-            <label>
-              Referencia privada de reproducción (opcional)
-              <input
-                disabled={busy || !!pending}
-                maxLength={2000}
-                value={input.playback_reference || ""}
-                onChange={(e) =>
-                  setInput({
-                    ...input,
-                    playback_reference: e.target.value || null,
-                    authorized: false,
-                  })
-                }
-              />
-            </label>
-            <label>
-              Referencia del permiso o licencia (opcional)
-              <textarea
-                disabled={busy || !!pending}
-                maxLength={2000}
-                value={input.authorization_reference || ""}
-                onChange={(e) =>
-                  setInput({
-                    ...input,
-                    authorization_reference: e.target.value || null,
-                    authorized: false,
-                  })
-                }
-              />
-            </label>
-            <label className="authorization-check">
-              <input
-                disabled={busy || !!pending}
-                type="checkbox"
-                checked={input.authorized}
-                onChange={(e) =>
-                  setInput({ ...input, authorized: e.target.checked })
-                }
-              />
-              Confirmo que la fuente es legítima y tengo autorización para
-              usarla.
-            </label>
+            <SourceEditor
+              sources={input.sources}
+              disabled={busy || !!pending}
+              onChange={(sources) => setInput({ ...input, sources })}
+            />
+            {editing !== "new" && <SourceReports episodeId={editing.id} />}
             <p className="info-notice">
-              {episodeStatus(input)}. La referencia permanece privada y no se
-              abre. Guardar devuelve el episodio a borrador; publica sus datos
-              después de revisarlos. La reproducción integrada está pendiente.
+              Guardar devuelve el episodio a borrador. Publica después de
+              revisarlo.
             </p>
             {pending && (
               <p className="info-notice">
@@ -397,7 +366,7 @@ const EpisodeManager = forwardRef<EpisodeNavigation, Props>(
               </button>
               <button
                 type="button"
-                className="button button-outline"
+                className="button button-outline episode-cancel"
                 disabled={busy}
                 onClick={showList}
               >
@@ -414,11 +383,9 @@ const EpisodeManager = forwardRef<EpisodeNavigation, Props>(
                   {row.episode_number}. {row.title}
                 </strong>
                 <span
-                  className={`admin-badge ${row.authorized ? "is-ready" : "is-draft"}`}
+                  className={`admin-badge ${row.sources?.some((s) => s.active && enabledPlaybackUrl(s.player_type, s.url)) ? "is-ready" : "is-draft"}`}
                 >
-                  {row.published
-                    ? "Publicado · reproducción no disponible"
-                    : episodeStatus(row)}
+                  {row.published ? "Publicado" : episodeStatus(row)}
                 </span>
                 <div className="management-actions">
                   <button
@@ -430,7 +397,7 @@ const EpisodeManager = forwardRef<EpisodeNavigation, Props>(
                         window.confirm(
                           row.published
                             ? "¿Retirar este episodio?"
-                            : "¿Publicar los datos de este episodio? Esto no habilita su reproducción.",
+                            : "¿Publicar este episodio y sus fuentes activas?",
                         )
                       )
                         void run(async () => {

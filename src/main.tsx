@@ -12,6 +12,7 @@ import Home from "./pages/Home";
 import Catalog from "./pages/Catalog";
 import AnimeDetail from "./pages/AnimeDetail";
 import Auth from "./pages/Auth";
+const EpisodePlayer = lazy(() => import("./pages/EpisodePlayer"));
 const Admin = lazy(() => import("./pages/Admin"));
 import NotFound from "./pages/NotFound";
 import Account from "./pages/Account";
@@ -24,6 +25,7 @@ const router = createBrowserRouter(
   createRoutesFromElements(
     <Route element={<Layout />}>
       <Route index element={<Home />} />
+      <Route path="episodio/:episodeId" element={<EpisodePlayer />} />
       <Route path="catalogo" element={<Catalog />} />
       <Route path="anime/:animeId" element={<AnimeDetail />} />
       <Route path="iniciar-sesion" element={<Auth />} />

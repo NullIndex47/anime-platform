@@ -191,6 +191,9 @@ test("Search, preview, import draft, local edits, reload and deletion never publ
   await expect(page.getByRole("status")).toContainText("borrador privado");
   expect(s.imports()).toBe(1);
   await page.getByRole("link", { name: "Ver mis animes", exact: true }).click();
+  // This link performs a document navigation. Do not click the old page's table
+  // while the destination is still loading under a slower/full-suite browser.
+  await page.waitForURL("**/admin/animes");
   await page.getByRole("button", { name: "Editar", exact: true }).click();
   await page.getByLabel("Título local", { exact: true }).fill("Edited fixture");
   await page.getByLabel("Géneros separados por comas").fill("Test, Adventure");

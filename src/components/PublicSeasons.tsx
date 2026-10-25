@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { useEffect, useState } from "react";
 import { requireClient } from "../auth/session";
 import {
@@ -135,8 +136,16 @@ function Season({ season }: { season: PublicSeason }) {
                     </strong>
                     {e.description && <p>{e.description}</p>}
                     <span className="admin-badge">
-                      Reproducción no disponible
+                      {e.playback_available
+                        ? "Disponible"
+                        : "Reproducción no disponible"}
                     </span>
+                    <Link
+                      className="button button-outline"
+                      to={`/episodio/${e.id}`}
+                    >
+                      Abrir episodio {e.episode_number}
+                    </Link>
                   </li>
                 ))}
               </ol>

@@ -204,8 +204,8 @@ function AdminCatalog() {
           Tu espacio de historias<span className="accent">.</span>
         </h1>
         <p>
-          Gestiona tus fichas y decide cuándo publicarlas. Publicar información
-          no habilita la reproducción de episodios.
+          Gestiona tus fichas y decide cuándo publicarlas. La reproducción requiere
+          episodios publicados con fuentes activas.
         </p>
       </div>
       <div className="admin-layout">

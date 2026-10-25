@@ -43,6 +43,12 @@ export async function setupManagement(
     const name = r.request().url().split("/").at(-1)!;
     const b = r.request().postDataJSON();
     calls.push(name);
+    if (name === "yoru_admin_episodes_v2") {
+      reads.push("catalog_episodes");
+      if (failEpisodeRead) { failEpisodeRead = false; return r.fulfill({ status: 500, json: { message: "Read failed" } }); }
+      return r.fulfill({ json: episodes.filter(e => e.anime_id === b.p_anime_id && e.season_id === b.p_season_id).sort((a,b) => Number(a.episode_number)-Number(b.episode_number)) });
+    }
+    if (name === "yoru_source_reports") return r.fulfill({ json: [] });
     if (name === "yoru_is_admin") return r.fulfill({ json: true });
     if (fail) {
       fail = false;
@@ -85,7 +91,7 @@ export async function setupManagement(
     }
     if (name === "yoru_delete_episode")
       episodes = episodes.filter((e) => e.id !== b.p_id);
-    if (name === "yoru_save_episode") {
+    if (name === "yoru_save_episode_v2") {
       if (
         episodes.some(
           (episode) =>
@@ -104,11 +110,8 @@ export async function setupManagement(
         episode_number: b.p_number,
         title: b.p_title,
         description: b.p_description,
-        playback_reference: b.p_playback_reference,
-        authorized: b.p_authorized,
-        authorization_reference: b.p_authorization_reference,
-        available: false,
-        published_at: null,
+        sources: b.p_sources,
+        published: false,
       };
       episodes = b.p_id
         ? episodes.map((e) => (e.id === b.p_id ? row : e))
