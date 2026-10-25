@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { safePlaybackUrl, type PlaybackSource } from "../services/playback";
+import { enabledPlaybackUrl, type PlaybackSource } from "../services/playback";
 import SandboxedPlayerFrame from "./SandboxedPlayerFrame";
 export default function PrivateSourcePreview({
   source,
@@ -20,7 +20,7 @@ export default function PrivateSourcePreview({
       }
     };
   }, [source.url]);
-  if (!safePlaybackUrl(source.player_type, source.url)) return null;
+  if (!enabledPlaybackUrl(source.player_type, source.url)) return null;
   return (
     <section
       aria-label="Prueba privada del servidor"

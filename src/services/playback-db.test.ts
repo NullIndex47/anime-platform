@@ -76,6 +76,7 @@ test("3E incremental migration, atomic source CRUD, visibility, privacy, reports
     ]);
     await db.exec(await migration("20261024220000_episode_sources.sql"));
     await db.exec(await migration("20261025230000_playback_providers.sql"));
+    await db.exec(await migration("20261025233000_playback_provider_status.sql"));
     assert.deepEqual(
       (
         await db.query(

@@ -4,6 +4,8 @@ YORU permite crear fichas manuales en Supabase, publicarlas en Inicio y Explorar
 
 La FASE 3E añade reproducción integrada de episodios publicados con múltiples servidores administrables, iframe oficial o vídeo HTML5 externo y reportes de problemas. No aloja vídeos en Cloudflare. Consulta la [transición compatible con 3D usando el Supabase actual](docs/phase-3e-transition.md) antes de aplicar el SQL de expansión. La FASE 3D incorporó portadas individuales y publicación independiente de temporadas y episodios, y retiró la demo.
 
+El [estado actual de proveedores y su SQL incremental](docs/phase-3e-providers.md) documenta Streamtape desactivado, los proveedores pendientes y las pruebas reales frente a las simuladas. No reejecutes la expansión 3E si ya está aplicada.
+
 ## Preparar y probar
 
 Node 22.12 o posterior:

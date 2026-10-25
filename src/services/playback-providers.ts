@@ -2,6 +2,8 @@ export interface PlaybackProvider {
   id: string;
   name: string;
   type: "iframe" | "html5";
+  status: "enabled" | "disabled";
+  disabledReason?: string;
   patterns: readonly RegExp[];
   help: string;
   placeholder: string;
@@ -28,6 +30,7 @@ const videoFramePolicy = {
 export const playbackProviders: readonly PlaybackProvider[] = [
   {
     id: "youtube",
+    status: "enabled",
     name: "YouTube",
     type: "iframe",
     iframePolicy: establishedFramePolicy,
@@ -39,6 +42,7 @@ export const playbackProviders: readonly PlaybackProvider[] = [
   },
   {
     id: "vimeo",
+    status: "enabled",
     name: "Vimeo",
     type: "iframe",
     iframePolicy: establishedFramePolicy,
@@ -48,6 +52,9 @@ export const playbackProviders: readonly PlaybackProvider[] = [
   },
   {
     id: "streamtape",
+    status: "disabled",
+    disabledReason:
+      "Streamtape está desactivado por incompatibilidad pendiente con la protección de YORU. Conserva el enlace o elige otro proveedor. Una marca activa anterior se conserva, pero no permite reproducir; puedes desmarcarla. No se admiten nuevas activaciones ni pruebas privadas.",
     name: "Streamtape",
     type: "iframe",
     iframePolicy: videoFramePolicy,
@@ -62,6 +69,7 @@ export const playbackProviders: readonly PlaybackProvider[] = [
   },
   {
     id: "uqload",
+    status: "enabled",
     name: "Uqload",
     type: "iframe",
     iframePolicy: videoFramePolicy,
@@ -73,6 +81,7 @@ export const playbackProviders: readonly PlaybackProvider[] = [
   },
   {
     id: "html5",
+    status: "enabled",
     name: "Vídeo HTML5",
     type: "html5",
     patterns: [
@@ -88,17 +97,17 @@ export const pendingPlaybackProviders = [
   {
     name: "Netu",
     reason:
-      "Su integración principal usa un cargador JavaScript. El iframe alternativo y sus dominios necesitan verificación con contenido autorizado y el aislamiento de YORU.",
+      "La API ofrece un cargador JavaScript y un iframe alternativo en baiduccdn.com. Falta confirmar la vigencia de ese iframe y probar un vídeo autorizado con el sandbox de YORU; no se ejecutará el cargador en la página.",
   },
   {
     name: "StreamWish",
     reason:
-      "La documentación pública consultada no verifica un formato de inserción y dominio estable. Pendiente de una URL oficial autorizada.",
+      "La API y las FAQ oficiales no documentan el formato y dominio actuales de inserción. Falta una URL emitida por el servicio para un vídeo autorizado y comprobarla con el sandbox de YORU.",
   },
   {
     name: "EarnVids",
     reason:
-      "La API pública no documenta la URL de inserción. Pendiente de verificar un reproductor oficial autorizado y sus dominios.",
+      "La API oficial en earnvidsapi.com no documenta una URL de inserción. Falta confirmar el dominio actual, obtener un iframe oficial autorizado y comprobarlo con el sandbox de YORU.",
   },
 ] as const;
 
@@ -118,7 +127,8 @@ export function playbackProvider(type: string, value: string) {
 }
 
 export function playbackIframePolicy(value: string) {
-  return playbackProvider("iframe", value)?.iframePolicy;
+  const provider = playbackProvider("iframe", value);
+  return provider?.status === "enabled" ? provider.iframePolicy : undefined;
 }
 
 /** Local, documented conversion only. No network, redirects or HTML parsing. */

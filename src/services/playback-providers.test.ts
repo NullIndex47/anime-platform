@@ -5,6 +5,7 @@ import {
   resolvePlaybackInput,
   normalizePlaybackSource,
   safePlaybackUrl,
+  enabledPlaybackUrl,
   playbackIframePolicy,
 } from "./playback";
 import {
@@ -16,7 +17,7 @@ import { validateEpisode } from "./episode-management";
 test("each iframe has a closed provider policy; unknown URLs get none and no provider can open popups or navigate top", () => {
   for (const { provider, type, url } of providerUrls) {
     const policy = playbackIframePolicy(url);
-    if (type === "html5") {
+    if (type === "html5" || provider === "streamtape") {
       assert.equal(policy, undefined);
       continue;
     }
@@ -56,6 +57,7 @@ for (const provider of playbackProviders) {
       (p) => p.provider === provider.id,
     )) {
       assert.equal(safePlaybackUrl(type, url), true, url);
+      assert.equal(enabledPlaybackUrl(type, url), provider.status === "enabled", url);
       assert.equal(
         safePlaybackUrl(type === "iframe" ? "html5" : "iframe", url),
         false,
@@ -112,12 +114,18 @@ test("saving with Enter normalizes public input and keeps existing/legacy source
     url: "https://streamtape.com/e/YoruTest12345abC",
   });
   assert.match(source.url, /\/v\//, "input is not mutated");
-  validateEpisode({
+  const episode = {
     title: "Test",
     episode_number: 1,
     description: null,
     sources: [source],
-  });
+  };
+  assert.throws(() => validateEpisode(episode), /Proveedor desactivado/);
+  validateEpisode({ ...episode, sources: [normalized] }, [normalized]);
+  assert.throws(() => validateEpisode({ ...episode, sources: [{ ...normalized, id: "new" }] }, [normalized]), /Proveedor desactivado/);
+  assert.throws(() => validateEpisode({ ...episode, sources: [normalized] }, [{ ...normalized, active: false }]), /Proveedor desactivado/);
+  assert.throws(() => validateEpisode({ ...episode, sources: [{ ...normalized, url: normalized.url + "x" }] }, [normalized]), /Proveedor desactivado/);
+  validateEpisode({ ...episode, sources: [{ ...source, active: false }] });
   const legacy = { ...source, active: false, url: "PRIVATE LEGACY" };
   assert.equal(normalizePlaybackSource(legacy), legacy);
   for (const { url, type } of providerUrls) {

@@ -8,7 +8,7 @@ Ver [pulido visual y sesiones de reportes](phase-3e-visual-polish.md). La [ampli
 
 ## Transición compatible con 3D
 
-Seguir la [guía corta de transición](phase-3e-transition.md) para una base 3D. Usa el Supabase actual y un respaldo restaurado y verificado localmente. Si la expansión ya está aplicada, seguir únicamente las [instrucciones del SQL nuevo de proveedores](phase-3e-providers.md#sql-que-debe-aplicarse-manualmente).
+Seguir la [guía corta de transición](phase-3e-transition.md) para una base 3D. Usa el Supabase actual y un respaldo restaurado y verificado localmente. Si la expansión ya está aplicada, seguir únicamente las [instrucciones del SQL incremental de proveedores y estado](phase-3e-providers.md#sql-manual-incremental-y-separado).
 
 La migración de expansión inicial de esta PR ya está aplicada en el Supabase del proyecto y no se modifica. Conserva todas las columnas, datos y RPC de 3D. Los RPC de 3E son `yoru_save_episode_v2` y `yoru_admin_episodes_v2`; no dependen de campos antiguos. No hay archivo destructivo ni borrado físico en esta fase. La limpieza se pospone a otra migración tras cerrar la ventana de recuperación.
 
@@ -51,7 +51,7 @@ npm run test:e2e:worker -- tests/player.spec.ts tests/player-polish.spec.ts test
 npm run build
 ```
 
-Resultados locales del 25 de octubre de 2026, con expansión compatible:
+Resultados de la ampliación inicial de proveedores, antes de desactivar Streamtape (25 de octubre de 2026). Los resultados y el SQL actuales están en la [revisión de proveedores](phase-3e-providers.md):
 
 - `npm test`: **64 correctas**.
 - Suite completa Vite: **142 correctas**, 2 casos exclusivos de Worker omitidos.

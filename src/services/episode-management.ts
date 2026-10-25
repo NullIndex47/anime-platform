@@ -1,5 +1,6 @@
 import {
   normalizePlaybackSource,
+  enabledPlaybackUrl,
   validateSource,
   type PlaybackSource,
 } from "./playback";
@@ -95,7 +96,10 @@ export async function deleteSeason(animeId: string, id: string) {
   });
   databaseError(error);
 }
-export function validateEpisode(data: EpisodeInput) {
+export function validateEpisode(
+  data: EpisodeInput,
+  previous: readonly PlaybackSource[] = [],
+) {
   if (
     !Number.isInteger(data.episode_number) ||
     data.episode_number < 1 ||
@@ -109,15 +113,18 @@ export function validateEpisode(data: EpisodeInput) {
     );
   if (data.sources.length > 20)
     throw new CatalogError("Máximo 20 servidores por episodio.");
-  data.sources.map(normalizePlaybackSource).forEach(validateSource);
+  data.sources.map(normalizePlaybackSource).forEach((source) =>
+    validateSource(source, previous.find((s) => s.id === source.id)),
+  );
 }
 export async function saveEpisode(
   animeId: string,
   seasonId: string,
   id: string | null,
   data: EpisodeInput,
+  previous: readonly PlaybackSource[] = [],
 ) {
-  validateEpisode(data);
+  validateEpisode(data, previous);
   const { error } = await requireClient().rpc("yoru_save_episode_v2", {
     p_anime_id: animeId,
     p_season_id: seasonId,
@@ -145,7 +152,7 @@ export async function deleteEpisode(
   databaseError(error);
 }
 export const episodeStatus = (row: EpisodeInput) =>
-  row.sources?.some((s) => s.active)
+  row.sources?.some((s) => s.active && enabledPlaybackUrl(s.player_type, s.url))
     ? "Preparado · privado"
     : "Borrador · fuente pendiente";
 

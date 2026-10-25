@@ -52,6 +52,7 @@ test("real 3D bundle and 3E frontend share expanded PostgreSQL and support front
     await db.exec("reset role");
     await db.exec(await readMigration(expansionName));
     await db.exec(await readMigration("20261025230000_playback_providers.sql"));
+    await db.exec(await readMigration("20261025233000_playback_provider_status.sql"));
     await db.exec("set role authenticated");
     await page.addInitScript(
       ({ user, token }) =>

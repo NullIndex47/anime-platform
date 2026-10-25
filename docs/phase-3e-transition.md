@@ -2,7 +2,7 @@
 
 Todo se prepara en la [PR #11](https://github.com/NullIndex47/anime-platform/pull/11). No hace falta otro proyecto Supabase. No se ha ejecutado SQL remoto ni desplegado Production manualmente.
 
-**Si ya aplicaste la expansión 3E:** no repitas los pasos de migración de esta guía. La ampliación de proveedores tiene un [SQL incremental nuevo y sus instrucciones](phase-3e-providers.md#sql-que-debe-aplicarse-manualmente); `20261024220000_episode_sources.sql` permanece intacto.
+**Si ya aplicaste la expansión 3E:** no repitas los pasos de migración de esta guía. La ampliación de proveedores y la desactivación de Streamtape tienen [SQL incremental separado e instrucciones actuales](phase-3e-providers.md#sql-manual-incremental-y-separado); `20261024220000_episode_sources.sql` y `20261025230000_playback_providers.sql` permanecen intactos.
 
 ## Pasos
 

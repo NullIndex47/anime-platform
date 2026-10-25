@@ -1,5 +1,6 @@
 import SourceEditor from "./SourceEditor";
 import SourceReports from "./SourceReports";
+import { enabledPlaybackUrl } from "../services/playback";
 import {
   forwardRef,
   useEffect,
@@ -217,6 +218,7 @@ const EpisodeManager = forwardRef<EpisodeNavigation, Props>(
           season.id,
           editing === "new" ? null : editing.id,
           input,
+          baseline.sources,
         );
         const saved = { number: input.episode_number, next };
         cache.delete(season.id);
@@ -381,7 +383,7 @@ const EpisodeManager = forwardRef<EpisodeNavigation, Props>(
                   {row.episode_number}. {row.title}
                 </strong>
                 <span
-                  className={`admin-badge ${row.sources?.some((s) => s.active) ? "is-ready" : "is-draft"}`}
+                  className={`admin-badge ${row.sources?.some((s) => s.active && enabledPlaybackUrl(s.player_type, s.url)) ? "is-ready" : "is-draft"}`}
                 >
                   {row.published ? "Publicado" : episodeStatus(row)}
                 </span>

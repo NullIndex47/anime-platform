@@ -27,6 +27,13 @@ export function safePlaybackUrl(type: string, value: string) {
     return false;
   }
 }
+/** Availability is separate from syntax so disabled records remain editable. */
+export function enabledPlaybackUrl(type: string, value: string) {
+  return (
+    safePlaybackUrl(type, value) &&
+    playbackProvider(type, value)?.status === "enabled"
+  );
+}
 export function normalizePlaybackSource(
   source: PlaybackSource,
 ): PlaybackSource {
@@ -35,7 +42,7 @@ export function normalizePlaybackSource(
     ? { ...source, player_type: resolved.provider.type, url: resolved.url }
     : source;
 }
-export function validateSource(s: PlaybackSource) {
+export function validateSource(s: PlaybackSource, previous?: PlaybackSource) {
   if (
     !s.name.trim() ||
     s.name.trim().length > 80 ||
@@ -46,6 +53,19 @@ export function validateSource(s: PlaybackSource) {
   )
     throw new Error(
       "Revisa el servidor: usa una URL HTTPS oficial de un proveedor permitido. Los enlaces antiguos no compatibles deben permanecer inactivos.",
+    );
+  if (
+    s.active &&
+    !enabledPlaybackUrl(s.player_type, s.url) &&
+    !(
+      previous?.active &&
+      previous.id === s.id &&
+      previous.url === s.url &&
+      previous.player_type === s.player_type
+    )
+  )
+    throw new Error(
+      "Proveedor desactivado: conserva la fuente inactiva o elige otro proveedor. No se puede activar Streamtape.",
     );
 }
 export class ReportSubmissionError extends Error {

@@ -25,7 +25,7 @@ import {
   type PublicEpisode,
   type PublicSeason,
 } from "../services/persistent-catalog";
-import { safePlaybackUrl } from "../services/playback";
+import { enabledPlaybackUrl } from "../services/playback";
 import NotFound from "./NotFound";
 interface PlayerData {
   anime: PublicAnime;
@@ -121,7 +121,7 @@ function Player({ id }: { id: string }) {
         throw new Error();
       if (!anime || !seasonResult.data || c.signal.aborted) return;
       const sources = (sourceResult.data || []).filter((s) =>
-        safePlaybackUrl(s.player_type, s.url),
+        enabledPlaybackUrl(s.player_type, s.url),
       ) as PublicPlaybackSource[];
       setData({ anime, episode: e, season: seasonResult.data, sources });
       setSelected(sources[0]?.id || "");

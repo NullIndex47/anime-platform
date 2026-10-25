@@ -83,6 +83,8 @@ export default function SourceEditor({
             resolved?.provider.id ??
             (s.url ? "legacy" : "");
           const provider = playbackProviders.find((p) => p.id === providerId);
+          const providerDisabled = resolved?.provider.status === "disabled";
+          const previewAllowed = resolved?.provider.status === "enabled";
           return (
             <details
               className="source-card"
@@ -108,8 +110,12 @@ export default function SourceEditor({
                   <small>Servidor {i + 1}</small>
                   <strong>{s.name.trim() || "Nuevo servidor"}</strong>
                 </span>
-                <span className={`source-state ${s.active ? "is-active" : ""}`}>
-                  {s.active ? "Activo" : "Inactivo"}
+                <span
+                  className={`source-state ${s.active && !providerDisabled ? "is-active" : ""}`}
+                >
+                  {providerDisabled
+                    ? "Proveedor desactivado"
+                    : s.active ? "Activo" : "Inactivo"}
                 </span>
                 <ChevronDown
                   className="source-chevron"
@@ -139,7 +145,7 @@ export default function SourceEditor({
                         const selected = playbackProviders.find(
                           (p) => p.id === e.target.value,
                         );
-                        if (!selected) return;
+                        if (!selected || selected.status !== "enabled") return;
                         setProviderChoices((previous) => ({
                           ...previous,
                           [s.id]: selected.id,
@@ -162,8 +168,13 @@ export default function SourceEditor({
                         </option>
                       )}
                       {playbackProviders.map((p) => (
-                        <option key={p.id} value={p.id}>
+                        <option
+                          key={p.id}
+                          value={p.id}
+                          disabled={p.status === "disabled"}
+                        >
                           {p.name}
+                          {p.status === "disabled" ? " · Desactivado" : ""}
                         </option>
                       ))}
                       <optgroup label="Pendientes de verificación">
@@ -197,6 +208,8 @@ export default function SourceEditor({
                           }));
                         update(i, {
                           url,
+                          ...(input?.provider.status === "disabled" && url !== s.url
+                            ? { active: false } : {}),
                           ...(input
                             ? { player_type: input.provider.type }
                             : {}),
@@ -220,18 +233,23 @@ export default function SourceEditor({
                   className={`source-provider-help ${s.url && !resolved ? "has-error" : ""}`}
                   id={`source-help-${s.id}`}
                 >
-                  {s.url && !resolved
-                    ? "Formato no compatible. Revisa el proveedor y su URL oficial; conserva los enlaces antiguos inactivos."
-                    : (provider?.help ??
-                      "Pega la URL para reconocer el proveedor o selecciónalo en la lista.")}
+                  {providerDisabled
+                    ? resolved.provider.disabledReason
+                    : s.url && !resolved
+                      ? "Formato no compatible. Revisa el proveedor y su URL oficial; conserva los enlaces antiguos inactivos."
+                      : (provider?.help ??
+                        "Pega la URL para reconocer el proveedor o selecciónalo en la lista.")}
                 </p>
                 <div className="source-card-footer">
                   <label className="authorization-check source-active-toggle">
                     <input
-                      disabled={disabled}
+                      disabled={disabled || (providerDisabled && !s.active)}
                       type="checkbox"
                       checked={s.active}
-                      onChange={(e) => update(i, { active: e.target.checked })}
+                      onChange={(e) => {
+                        if (providerDisabled && e.target.checked) return;
+                        update(i, { active: e.target.checked });
+                      }}
                     />{" "}
                     Fuente activa
                   </label>
@@ -240,8 +258,9 @@ export default function SourceEditor({
                       type="button"
                       className="button source-test"
                       aria-label={`Probar servidor ${i + 1}`}
-                      disabled={!resolved}
+                      disabled={!previewAllowed}
                       onClick={() =>
+                        previewAllowed &&
                         resolved &&
                         setPreview({
                           ...s,
@@ -340,10 +359,19 @@ export default function SourceEditor({
             <HelpCircle size={15} aria-hidden="true" /> Proveedores compatibles
           </summary>
           <p>
-            {playbackProviders.map((p) => p.name).join(" · ")}. Solo las URL
+            {playbackProviders
+              .filter((p) => p.status === "enabled")
+              .map((p) => p.name).join(" · ")}. Solo las URL
             oficiales indicadas en cada servidor. Si un proveedor exige ventanas
             emergentes o redirecciones fuera del reproductor, usa otra fuente.
           </p>
+          {playbackProviders
+            .filter((p) => p.status === "disabled")
+            .map((p) => (
+              <p key={p.id}>
+                <strong>{p.name} · Desactivado.</strong> {p.disabledReason}
+              </p>
+            ))}
           {pendingPlaybackProviders.map((p) => (
             <p key={p.name}>
               <strong>{p.name} · pendiente.</strong> {p.reason}

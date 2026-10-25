@@ -12,7 +12,8 @@ import {
 } from "./helpers/player";
 import { providerUrls } from "../src/services/playback-provider.fixtures";
 
-const frames = providerUrls.filter((p) => p.type === "iframe");
+const frames = providerUrls.filter((p) => p.type === "iframe" && p.provider !== "streamtape");
+const enabledUrls = providerUrls.filter((p) => p.provider !== "streamtape").slice(0, 4);
 async function simulatedProviders(page: Page) {
   const requests: string[] = [];
   const escapes: string[] = [];
@@ -104,7 +105,8 @@ test("simulated provider iframes keep explicit play, fullscreen, isolation, unmo
   ).toBeVisible();
   await expect(page.locator("iframe,video")).toHaveCount(0);
   expect(requests).toHaveLength(0);
-  for (const p of providerUrls.slice(0, 5)) {
+  await expect(page.getByRole("button", { name: "streamtape", exact: true })).toHaveCount(0);
+  for (const p of enabledUrls) {
     await page
       .getByRole("group", { name: "Servidores disponibles" })
       .getByRole("button", { name: p.provider, exact: true })
@@ -176,7 +178,7 @@ test("simulated provider iframes keep explicit play, fullscreen, isolation, unmo
   await expect(page.locator("iframe,video")).toHaveCount(0);
 });
 
-test("provider selector preserves existing sources and manages new Streamtape/Uqload links with private previews", async ({
+test("provider selector preserves existing sources and manages Uqload with isolated private previews", async ({
   page,
 }, info) => {
   test.setTimeout(60000);
@@ -217,7 +219,7 @@ test("provider selector preserves existing sources and manages new Streamtape/Uq
   expect(state.episodes()[0].sources).toEqual(original);
   await page.getByRole("button", { name: "Editar episodio" }).click();
   for (const [index, p] of frames
-    .filter((p) => ["streamtape", "uqload"].includes(p.provider))
+    .filter((p) => p.provider === "uqload")
     .entries()) {
     await page
       .getByRole("button", { name: "Añadir servidor", exact: true })
@@ -225,20 +227,12 @@ test("provider selector preserves existing sources and manages new Streamtape/Uq
     const card = page.locator(".source-card").last();
     await card
       .getByLabel("Nombre del servidor")
-      .fill(
-        p.provider === "streamtape"
-          ? "Streamtape · original"
-          : "Uqload · original",
-      );
+      .fill("Uqload · original");
     await card
       .getByLabel("Proveedor", { exact: true })
       .selectOption(p.provider);
     const url = card.getByLabel("URL del servidor");
-    await url.fill(
-      p.provider === "streamtape"
-        ? p.url.replace("/e/", "/v/") + "/own-film.mp4"
-        : p.url,
-    );
+    await url.fill(p.url);
     await url.press("Tab");
     await expect(url).toHaveValue(p.url);
     await card.getByLabel("Fuente activa").check();
@@ -268,10 +262,7 @@ test("provider selector preserves existing sources and manages new Streamtape/Uq
     await expect(page.locator("iframe")).toHaveCount(0);
   }
   await page.getByRole("button", { name: "Contraer todos" }).click();
-  for (const card of [
-    page.locator(".source-card").nth(3),
-    page.locator(".source-card").nth(4),
-  ])
+  for (const card of [page.locator(".source-card").nth(3)])
     await card.locator("summary").click();
   await page.getByText("Proveedores compatibles", { exact: true }).click();
   for (const name of ["Netu", "StreamWish", "EarnVids"])
@@ -304,7 +295,7 @@ test("provider selector preserves existing sources and manages new Streamtape/Uq
     fullPage: true,
   });
   await page
-    .getByRole("button", { name: "Subir servidor 5", exact: true })
+    .getByRole("button", { name: "Subir servidor 4", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Guardar episodio privado", exact: true })
@@ -313,25 +304,18 @@ test("provider selector preserves existing sources and manages new Streamtape/Uq
     page.getByRole("button", { name: "Editar episodio" }),
   ).toBeVisible();
   const saved = state.episodes()[0].sources as typeof sources;
-  expect(saved.slice(0, 3)).toEqual(original);
-  expect(saved[3].url).toBe(frames.find((p) => p.provider === "uqload")!.url);
-  expect(saved[4].url).toBe(
-    frames.find((p) => p.provider === "streamtape")!.url,
-  );
+  expect(saved.slice(0, 2)).toEqual(original.slice(0, 2));
+  expect(saved[2].url).toBe(frames.find((p) => p.provider === "uqload")!.url);
+  expect(saved[3]).toEqual({ ...legacy, priority: 3 });
   await page.reload();
   await page.getByRole("button", { name: "Temporadas y episodios" }).click();
   await page.getByRole("button", { name: "Ver episodios" }).click();
   await page.getByRole("button", { name: "Editar episodio" }).click();
   await page.getByRole("button", { name: "Expandir todos" }).click();
-  await expect(
-    page.getByLabel("Proveedor", { exact: true }).nth(3),
-  ).toHaveValue("uqload");
-  await expect(
-    page.getByLabel("Proveedor", { exact: true }).nth(4),
-  ).toHaveValue("streamtape");
+  await expect(page.getByLabel("Proveedor", { exact: true }).nth(2)).toHaveValue("uqload");
 });
 
-test("unverified/malicious providers cannot preview or activate; Enter saves only canonical Streamtape URLs", async ({
+test("unverified and malicious URLs cannot play; disabled Streamtape input saves inactive on Enter", async ({
   page,
 }) => {
   test.setTimeout(60000);
@@ -349,7 +333,7 @@ test("unverified/malicious providers cannot preview or activate; Enter saves onl
   await page.getByLabel("Nombre del servidor").fill("Mi clip");
   await page
     .getByLabel("Proveedor", { exact: true })
-    .selectOption("streamtape");
+    .selectOption("youtube");
   await page.getByLabel("Fuente activa").check();
   for (const bad of [
     "https://streamwish.com/e/yorutest0001",
@@ -370,6 +354,9 @@ test("unverified/malicious providers cannot preview or activate; Enter saves onl
   }
   const url = page.getByLabel("URL del servidor");
   await url.fill("https://streamtape.com/v/YoruTest12345abC/own-film.mp4");
+  await expect(page.getByLabel("Fuente activa")).not.toBeChecked();
+  await expect(page.getByLabel("Fuente activa")).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Probar servidor 1", exact: true })).toBeDisabled();
   await url.press("Enter");
   await expect(
     page.getByRole("button", { name: "Editar episodio" }),
@@ -377,6 +364,73 @@ test("unverified/malicious providers cannot preview or activate; Enter saves onl
   expect((state.episodes()[0].sources as typeof sources)[0]).toMatchObject({
     player_type: "iframe",
     url: "https://streamtape.com/e/YoruTest12345abC",
-    active: true,
+    active: false,
   });
+});
+
+test("disabled Streamtape remains editable without playback, reactivation or data loss", async ({ page }, info) => {
+  const { requests } = await simulatedProviders(page);
+  const tapeUrl = providerUrls.find(p => p.provider === "streamtape")!.url;
+  const tape = { ...sources[1], id: "00000000-0000-0000-0000-000000000109", name: "Streamtape conservado", url: tapeUrl, priority: 2, active: true };
+  const inactive = { ...tape, id: "00000000-0000-0000-0000-000000000110", name: "Streamtape inactivo", priority: 3, active: false };
+  const original = [sources[0], sources[1], tape, inactive];
+  const state = await setupManagement(page, { animes: [anime], seasons: [season], episodes: [{ ...episodes[1], sources: original }] });
+  await page.getByRole("button", { name: "Temporadas y episodios" }).click();
+  await page.getByRole("button", { name: "Ver episodios" }).click();
+  await page.getByRole("button", { name: "Editar episodio" }).click();
+  await page.getByRole("button", { name: "Expandir todos" }).click();
+  const card = page.locator(".source-card").nth(2);
+  const inactiveCard = page.locator(".source-card").nth(3);
+  for (const c of [card, inactiveCard]) {
+    await expect(c.getByLabel("Proveedor", { exact: true })).toHaveValue("streamtape");
+    await expect(c.locator('option[value="streamtape"]')).toHaveText("Streamtape · Desactivado");
+    await expect(c.locator('option[value="streamtape"]')).toHaveJSProperty("disabled", true);
+    await expect(c.locator("summary")).toContainText("Proveedor desactivado");
+    await expect(c.locator(".source-provider-help")).toContainText("Streamtape está desactivado");
+    await expect(c.getByRole("button", { name: /^Probar servidor/ })).toBeDisabled();
+  }
+  await expect(card.getByLabel("Fuente activa")).toBeChecked();
+  await expect(inactiveCard.getByLabel("Fuente activa")).toBeDisabled();
+  await page.getByText("Proveedores compatibles", { exact: true }).click();
+  for (const name of ["Netu", "StreamWish", "EarnVids"])
+    await expect(page.locator(".source-help")).toContainText(`${name} · pendiente`);
+  for (const width of [320, 390, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+  await page.setViewportSize({ width: info.project.name === "mobile" ? 390 : 1440, height: 1000 });
+  await page.evaluate(() => (document.activeElement as HTMLElement)?.blur());
+  await page.screenshot({ path: info.outputPath(`provider-status-${info.project.name}.png`), fullPage: true });
+  await page.getByRole("button", { name: "Guardar episodio privado", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Editar episodio" })).toBeVisible();
+  expect(state.episodes()[0].sources).toEqual(original);
+  await page.reload();
+  await page.getByRole("button", { name: "Temporadas y episodios" }).click();
+  await page.getByRole("button", { name: "Ver episodios" }).click();
+  await page.getByRole("button", { name: "Editar episodio" }).click();
+  await page.getByRole("button", { name: "Expandir todos" }).click();
+  await card.getByLabel("Fuente activa").uncheck();
+  await expect(card.getByLabel("Fuente activa")).toBeDisabled();
+  await page.getByRole("button", { name: "Guardar episodio privado", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Editar episodio" })).toBeVisible();
+  expect(state.episodes()[0].sources).toEqual(original.map(s => s.id === tape.id ? { ...s, active: false } : s));
+  await expect(page.locator("iframe,video")).toHaveCount(0);
+  expect(requests).toHaveLength(0);
+});
+
+test("an old API response containing only disabled Streamtape cannot start a player on direct reload", async ({ page }) => {
+  await setupPlayer(page);
+  let requests = 0;
+  await page.route("https://streamtape.com/**", r => { requests++; return r.abort(); });
+  await page.route(`${root}/rest/v1/public_episode_sources**`, r => r.fulfill({ json: [{
+    ...sources[1], url: providerUrls.find(p => p.provider === "streamtape")!.url, name: "Streamtape", episode_id: episodeId(2),
+  }] }));
+  for (const reload of [false, true]) {
+    if (reload) await page.reload(); else await page.goto(`/episodio/${episodeId(2)}`);
+    await expect(page.getByText("Este episodio todavía no está disponible", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Reproducir", exact: true })).toHaveCount(0);
+    await expect(page.locator("iframe,video")).toHaveCount(0);
+    await expect(page.getByRole("group", { name: "Servidores disponibles" })).toHaveCount(0);
+    expect(requests).toBe(0);
+  }
 });
