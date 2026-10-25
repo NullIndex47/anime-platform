@@ -1,0 +1,85 @@
+// Syntax-only IDs; never contacted. E2E serves YORU's own original WebM.
+export const providerUrls = [
+  {
+    provider: "youtube",
+    type: "iframe",
+    url: "https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ",
+  },
+  {
+    provider: "vimeo",
+    type: "iframe",
+    url: "https://player.vimeo.com/video/76979871",
+  },
+  {
+    provider: "streamtape",
+    type: "iframe",
+    url: "https://streamtape.com/e/YoruTest12345abC",
+  },
+  {
+    provider: "uqload",
+    type: "iframe",
+    url: "https://uqload.vc/e/yorutest0001?strm9.uqload.vc/i/01/00001/yorutest0001",
+  },
+  {
+    provider: "html5",
+    type: "html5",
+    url: "https://media.w3.org/2010/05/yoru-player-test.webm",
+  },
+  {
+    provider: "html5",
+    type: "html5",
+    url: "https://archive.org/download/own-film/test.webm",
+  },
+] as const;
+
+export const rejectedProviderUrls = [
+  "https://streamtape.com/v/YoruTest12345abC",
+  "https://streamtape.com/e/",
+  "https://streamtape.com/e/a/b",
+  "https://streamtape.com/e/test-id",
+  "https://streamtape.com/e/test?thumb=https://evil.test/image.png",
+  "https://strtape.tech/e/YoruTest12345abC",
+  "https://www.streamtape.com/e/YoruTest12345abC",
+  "https://uqload.vc/yorutest0001.html",
+  "https://uqload.vc/embed-yorutest0001.html",
+  "https://uqload.vc/e/yorutest0001",
+  "https://uqload.net/e/yorutest0001?strm9.uqload.vc/i/01/00001/yorutest0001",
+  "https://uqload.vc/e/yorutest0001?strm9.uqload.vc.evil.test/i/01/00001/yorutest0001",
+  "https://uqload.vc/e/yorutest0001?https://evil.test/i/01/00001/yorutest0001",
+  "https://uqload.vc/e/yorutest0001?strm9.uqload.vc/i/01/00001/yorutest0001&autoplay=1",
+  "https://uqload.vc/e/yorutest0001?strm9.uqload.vc/i/01/00001/%79orutest0001",
+  "https://uqload.vc/e/yorutest0001?strm9.uqload.vc/i/01/00001/../yorutest0001",
+  "https://streamwish.com/e/yorutest0001",
+  "https://earnvids.com/embed/yorutest0001",
+  "https://netu.tv/embed/yorutest0001",
+  "https://hqq.tv/player/embed_player.php?vid=yorutest0001",
+  "https://baiduccdn.com/player/embed_player.php?vid=yorutest0001&autoplay=no",
+  ...providerUrls.flatMap(({ url }) => {
+    const u = new URL(url);
+    return [
+      url.replace("https:", "http:"),
+      url.replace("https:", ""),
+      url.replace(u.host, `${u.host}.evil.test`),
+      url.replace(u.host, `${u.host}@evil.test`),
+      url.replace(u.host, `user:pass@${u.host}`),
+      url.replace(u.host, `${u.host}:443`),
+      url.replace(u.host, `${u.host}.`),
+      url.replace(u.host, `sub.${u.host}`),
+      url.replace(u.host, u.host.toUpperCase()),
+      url.replace("/", "\\"),
+      url.replace(/.$/, "%31"),
+      `${url}#fragment`,
+      `${url}?autoplay=1`,
+      `${url}&redirect=https://evil.test`,
+      `${url}\n`,
+      `${url}\r`,
+      `${url}\t`,
+      `${url}\u00a0`,
+      `${url}\u2028`,
+      ` ${url}`,
+      `${url}/..`,
+      `${url}<script>`,
+      `${url}${"a".repeat(2001)}`,
+    ];
+  }),
+];

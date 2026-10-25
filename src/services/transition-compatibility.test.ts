@@ -70,6 +70,7 @@ test("expansion leaves every legacy value, RPC body, grants, RLS and 3D read con
     const contractSql = `select p.proname,pg_get_functiondef(p.oid) as definition,p.proacl from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' order by p.proname,p.oid`;
     const contracts = (await db.query(contractSql)).rows;
     await db.exec(await readMigration(expansionName));
+    await db.exec(await readMigration("20261025230000_playback_providers.sql"));
     assert.ok(isDeepStrictEqual(await captureBackup(db), before));
     const after = (await db.query(contractSql)).rows;
     for (const contract of contracts)

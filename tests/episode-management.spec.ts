@@ -185,6 +185,7 @@ test("Manual anime, seasons and episodes CRUD, private preparation, reload and d
     .click();
   await page.goto("/catalogo");
   await page.getByLabel("Buscar en el catálogo").fill("Manual edited");
+  await expect(page).toHaveURL((url) => url.searchParams.get("q") === "Manual edited");
   await expect(page.getByText("Manual edited", { exact: true })).toHaveCount(0);
   await page.goto("/admin");
   page.once("dialog", (d) => d.accept());

@@ -4,13 +4,13 @@ Ruta pública estable: `/episodio/<UUID>`. La ficha enlaza cada episodio publica
 
 ## Reproductor y edición
 
-Ver [pulido visual, sesiones de reportes y capturas nuevas](phase-3e-visual-polish.md). Si ya aplicaste la expansión, estas mejoras de interfaz no requieren más SQL.
+Ver [pulido visual y sesiones de reportes](phase-3e-visual-polish.md). La [ampliación de proveedores y sus capturas](phase-3e-providers.md) añade selector en el editor y requiere únicamente una migración incremental nueva si ya aplicaste la expansión 3E.
 
 ## Transición compatible con 3D
 
-Seguir la [guía corta de transición](phase-3e-transition.md): usa el Supabase actual, un respaldo restaurado y verificado localmente, un solo SQL de expansión y recuperación volviendo al frontend 3D.
+Seguir la [guía corta de transición](phase-3e-transition.md) para una base 3D. Usa el Supabase actual y un respaldo restaurado y verificado localmente. Si la expansión ya está aplicada, seguir únicamente las [instrucciones del SQL nuevo de proveedores](phase-3e-providers.md#sql-que-debe-aplicarse-manualmente).
 
-La migración aún no aplicada de esta PR se ha sustituido por una expansión. Conserva todas las columnas, datos y RPC de 3D. Los RPC de 3E son `yoru_save_episode_v2` y `yoru_admin_episodes_v2`; no dependen de campos antiguos. No hay archivo destructivo ni borrado físico en esta fase. La limpieza se pospone a otra migración tras cerrar la ventana de recuperación.
+La migración de expansión inicial de esta PR ya está aplicada en el Supabase del proyecto y no se modifica. Conserva todas las columnas, datos y RPC de 3D. Los RPC de 3E son `yoru_save_episode_v2` y `yoru_admin_episodes_v2`; no dependen de campos antiguos. No hay archivo destructivo ni borrado físico en esta fase. La limpieza se pospone a otra migración tras cerrar la ventana de recuperación.
 
 En el editor hay «Probar servidor»: reproduce para la sesión administradora sin guardar, activar ni publicar contenido. Permite validar vídeos propios/autorizados en una ficha de prueba privada dentro del mismo Supabase.
 
@@ -22,12 +22,14 @@ Lista cerrada y revisable, sin comodines ni HTML introducido por el administrado
 | --- | --- |
 | Iframe | `https://www.youtube-nocookie.com/embed/<ID de 11 caracteres>` |
 | Iframe | `https://player.vimeo.com/video/<ID numérico>` |
+| Iframe | `https://streamtape.com/e/<ID alfanumérico>` |
+| Iframe | URL completa de Uqload `https://uqload.vc/e/<ID>?strm<N>.uqload.vc/i/<ruta restringida>`; ver [formato exacto](phase-3e-providers.md) |
 | HTML5 | `https://media.w3.org/2010/05/<ruta>.mp4` o `.webm` |
 | HTML5 | `https://archive.org/download/<ruta>.mp4` o `.webm` |
 
-Se rechazan HTTP, credenciales, puertos explícitos, parámetros, fragmentos, espacios, barras invertidas, codificación porcentual, rutas `..`, otros orígenes y formatos que el vídeo nativo no admite. Un origen permitido no demuestra derechos de reproducción: el administrador debe revisar el permiso del contenido. Las URLs de reproducción activas son necesariamente visibles al espectador; no deben contener secretos ni referencias de licencia.
+Se rechazan HTTP, credenciales, puertos explícitos, parámetros no previstos, fragmentos, espacios, barras invertidas, codificación porcentual, rutas `..`, otros orígenes y formatos que el vídeo nativo no admite. Un origen permitido no demuestra derechos de reproducción: el administrador debe revisar el permiso del contenido. Las URLs de reproducción activas son necesariamente visibles al espectador; no deben contener secretos ni referencias de licencia.
 
-Para ampliar proveedores: actualizar `playbackProviders` en `src/services/playback.ts`, añadir **otra migración** para `yoru_private.valid_playback_url` y ampliar las pruebas de paridad SQL/TypeScript. Evaluar los permisos mínimos de sandbox que necesita el proveedor; no retirar sus protecciones para saltar restricciones. No se incluye HLS/DASH ni dependencias de reproducción adicionales.
+Para ampliar proveedores: actualizar el registro modular `src/services/playback-providers.ts`, reexportado como `playbackProviders` por `src/services/playback.ts`, añadir **otra migración** para `yoru_private.valid_playback_url` y ampliar las pruebas de paridad SQL/TypeScript. Evaluar los permisos mínimos de sandbox que necesita el proveedor; no retirar sus protecciones para saltar restricciones. No se incluye HLS/DASH ni dependencias de reproducción adicionales.
 
 La tabla de fuentes está en `yoru_private`, sin acceso directo para `anon`/`authenticated` y con RLS forzado. Solo los RPC de administración, con comprobación de administrador en PostgreSQL, escriben y devuelven su DTO. El guardado de episodio y hasta 20 fuentes es atómico; valida pertenencia, conserva IDs, reordena y elimina fuentes ausentes. Las vistas públicas proyectan campos explícitos y filtran publicación efectiva de los tres niveles. `playback_available` depende de fuentes activas, sin campos heredados. No hay claves privilegiadas en cliente.
 
@@ -45,15 +47,15 @@ Dentro del editor de cada episodio, «Reportes de servidores» muestra hasta 100
 npm ci
 npm test
 npm run test:e2e -- --workers=2
-npm run test:e2e:worker -- tests/player.spec.ts tests/player-polish.spec.ts tests/transition.spec.ts tests/catalog-admin.spec.ts --grep 'Worker API|public detail|three servers|private episode|admin manages|signed-in|long episode|report session|compact editor|admin report rows|pending session|real 3D bundle' --workers=2
+npm run test:e2e:worker -- tests/player.spec.ts tests/player-polish.spec.ts tests/player-providers.spec.ts tests/transition.spec.ts tests/catalog-admin.spec.ts --grep 'Worker API|public detail|three servers|private episode|admin manages|signed-in|long episode|report session|compact editor|admin report rows|pending session|real 3D bundle|simulated provider|provider selector|unverified/malicious' --workers=2
 npm run build
 ```
 
 Resultados locales del 25 de octubre de 2026, con expansión compatible:
 
-- `npm test`: **54 correctas**.
-- Suite completa Vite: **136 correctas**, 2 casos exclusivos de Worker omitidos.
-- Selección de reproductor y API con Wrangler local: **30 correctas**, sin omisiones. Incluye reproducción real, entrada/salida de pantalla completa nativa, nombres largos y recarga directa con fallback SPA.
+- `npm test`: **64 correctas**.
+- Suite completa Vite: **142 correctas**, 2 casos exclusivos de Worker omitidos.
+- Selección de reproductor y API con Wrangler local: **36 correctas**, sin omisiones. Incluye reproducción del clip original, entrada/salida de pantalla completa nativa, nombres largos y recarga directa con fallback SPA.
 - `npm run build`: correcto; también se recompila al iniciar la suite Worker. Permanece el aviso de tamaño del bundle principal; no se añadieron dependencias de producción.
 - Ningún vídeo en `dist/`. Sin cambios en migraciones anteriores, SQL remoto, fusión ni despliegue manual de Production.
 

@@ -171,7 +171,7 @@ test("save and create next skips occupied numbers, clears private fields, locks 
     .fill("Descripción del episodio anterior");
   await page.getByRole("button", { name: "Añadir servidor", exact: true }).click();
   await page.getByLabel("Nombre del servidor").fill("Vídeo de prueba");
-  await page.getByLabel("Tipo de reproductor").selectOption("html5");
+  await page.getByLabel("Proveedor", { exact: true }).selectOption("html5");
   await page.getByLabel("URL del servidor").fill("https://media.w3.org/2010/05/sintel/trailer.mp4");
   await page.getByLabel("Fuente activa").check();
   const calls = state.calls.filter(

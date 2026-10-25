@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { safePlaybackUrl, type PlaybackSource } from "../services/playback";
+import SandboxedPlayerFrame from "./SandboxedPlayerFrame";
 export default function PrivateSourcePreview({
   source,
   stop,
@@ -32,13 +33,9 @@ export default function PrivateSourcePreview({
       </p>
       <div className="video-frame">
         {source.player_type === "iframe" ? (
-          <iframe
+          <SandboxedPlayerFrame
             title={`Prueba privada ${source.name}`}
-            src={source.url}
-            allow="fullscreen; picture-in-picture; encrypted-media"
-            allowFullScreen
-            sandbox="allow-scripts allow-same-origin allow-presentation"
-            referrerPolicy="strict-origin-when-cross-origin"
+            url={source.url}
           />
         ) : (
           <video

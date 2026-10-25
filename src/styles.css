@@ -1994,6 +1994,8 @@ td {
 .source-card-grid { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, .7fr) minmax(0, 1.4fr); gap: 12px; }
 .source-card-grid > label { min-width: 0; }
 .source-card-grid :is(input, select) { width: 100%; }
+.yoru-admin .source-provider-help { margin: 8px 0 0; font-size: 12px; line-height: 1.6; color: #96a18e; overflow-wrap: anywhere; }
+.yoru-admin .source-provider-help.has-error { color: #e6aa98; }
 .source-card-footer { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .yoru-admin .source-active-toggle { display: inline-flex !important; align-items: center; gap: 8px; margin-right: auto; font-size: 12px; color: #a6b29d; }
 .yoru-admin .source-active-toggle input { min-height: 16px; width: 16px !important; height: 16px; margin: 0; padding: 0; accent-color: var(--accent); }
@@ -2074,6 +2076,7 @@ td {
   .source-order { margin-right: auto; }
   .source-delete > span { display: none; }
   .source-delete { min-width: 44px; }
+  .source-help { flex-basis: 100%; }
   .yoru-admin .episode-save-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding-block: 12px; }
   .yoru-admin .episode-save-actions .episode-cancel { margin: 0; }
   .report-row { grid-template-columns: minmax(0, 1fr) auto; gap: 7px 12px; }

@@ -2,6 +2,8 @@
 
 Todo se prepara en la [PR #11](https://github.com/NullIndex47/anime-platform/pull/11). No hace falta otro proyecto Supabase. No se ha ejecutado SQL remoto ni desplegado Production manualmente.
 
+**Si ya aplicaste la expansión 3E:** no repitas los pasos de migración de esta guía. La ampliación de proveedores tiene un [SQL incremental nuevo y sus instrucciones](phase-3e-providers.md#sql-que-debe-aplicarse-manualmente); `20261024220000_episode_sources.sql` permanece intacto.
+
 ## Pasos
 
 1. **Guardar un respaldo comprobado antes del SQL.** En tu copia de esta rama, con Node 22.12+ y `npm ci`, ejecuta `npm run --silent phase3e:backup -- --query`. Copia esa consulta de solo lectura al SQL Editor del Supabase actual. Guarda el JSON completo de la columna `backup` como `work/yoru-before-3e.json` y ejecuta:

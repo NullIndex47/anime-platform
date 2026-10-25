@@ -12,6 +12,7 @@ import {
   VideoOff,
 } from "lucide-react";
 import SourceProblemReport from "../components/SourceProblemReport";
+import SandboxedPlayerFrame from "../components/SandboxedPlayerFrame";
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import { requireClient } from "../auth/session";
@@ -241,14 +242,10 @@ function Player({ id }: { id: string }) {
                 </p>
               </div>
             ) : source.player_type === "iframe" ? (
-              <iframe
+              <SandboxedPlayerFrame
                 key={`${source.id}-${attempt}`}
-                src={source.url}
+                url={source.url}
                 title={`Reproductor ${source.name}`}
-                allow="fullscreen; picture-in-picture; encrypted-media"
-                allowFullScreen
-                sandbox="allow-scripts allow-same-origin allow-presentation"
-                referrerPolicy="strict-origin-when-cross-origin"
                 onLoad={() => setWaiting(false)}
                 onError={() => {
                   setFailed(true);

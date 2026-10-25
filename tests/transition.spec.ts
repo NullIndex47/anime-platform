@@ -51,6 +51,7 @@ test("real 3D bundle and 3E frontend share expanded PostgreSQL and support front
     ).rows[0].id;
     await db.exec("reset role");
     await db.exec(await readMigration(expansionName));
+    await db.exec(await readMigration("20261025230000_playback_providers.sql"));
     await db.exec("set role authenticated");
     await page.addInitScript(
       ({ user, token }) =>
@@ -224,7 +225,7 @@ test("real 3D bundle and 3E frontend share expanded PostgreSQL and support front
     ).toHaveCount(0);
     // The migrated source stays inactive; the new UI replaces it independently.
     await page.getByLabel("Nombre del servidor").fill("Clip original");
-    await page.getByLabel("Tipo de reproductor").selectOption("html5");
+    await page.getByLabel("Proveedor", { exact: true }).selectOption("html5");
     const clip = "https://media.w3.org/2010/05/yoru-player-test.webm";
     await page.getByLabel("URL del servidor").fill(clip);
     await page.getByLabel("Fuente activa").check();

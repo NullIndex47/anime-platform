@@ -1,4 +1,11 @@
 import { requireClient } from "../auth/session";
+import { playbackProvider, resolvePlaybackInput } from "./playback-providers";
+export {
+  playbackProviders,
+  pendingPlaybackProviders,
+  resolvePlaybackInput,
+  playbackIframePolicy,
+} from "./playback-providers";
 export interface PlaybackSource {
   id: string;
   name: string;
@@ -7,39 +14,26 @@ export interface PlaybackSource {
   priority: number;
   active: boolean;
 }
-// Exact HTTPS origins and provider-specific paths. No arbitrary HTML or query flags.
-// Keep in sync with yoru_private.valid_playback_url in the incremental migration.
-export const playbackProviders = [
-  {
-    type: "iframe",
-    pattern: /^https:\/\/www\.youtube-nocookie\.com\/embed\/[A-Za-z0-9_-]{11}$/,
-  },
-  { type: "iframe", pattern: /^https:\/\/player\.vimeo\.com\/video\/[0-9]+$/ },
-  {
-    type: "html5",
-    pattern:
-      /^https:\/\/media\.w3\.org\/2010\/05\/[A-Za-z0-9_./-]+\.(mp4|webm)$/,
-  },
-  {
-    type: "html5",
-    pattern: /^https:\/\/archive\.org\/download\/[A-Za-z0-9_./-]+\.(mp4|webm)$/,
-  },
-];
 export function safePlaybackUrl(type: string, value: string) {
-  if (value.length > 2000 || /[\s\\%]/.test(value) || value.includes(".."))
-    return false;
+  // Match the original string before parsing: normalization must never turn an
+  // unreviewed origin/path into an accepted one. Retain the URL structure checks.
+  if (!playbackProvider(type, value)) return false;
   try {
-    const u = new URL(value);
+    const url = new URL(value);
     return (
-      u.protocol === "https:" &&
-      !u.username &&
-      !u.password &&
-      !u.port &&
-      playbackProviders.some((p) => p.type === type && p.pattern.test(value))
+      url.protocol === "https:" && !url.username && !url.password && !url.port
     );
   } catch {
     return false;
   }
+}
+export function normalizePlaybackSource(
+  source: PlaybackSource,
+): PlaybackSource {
+  const resolved = resolvePlaybackInput(source.url);
+  return resolved
+    ? { ...source, player_type: resolved.provider.type, url: resolved.url }
+    : source;
 }
 export function validateSource(s: PlaybackSource) {
   if (

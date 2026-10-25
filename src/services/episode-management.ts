@@ -1,4 +1,8 @@
-import { validateSource, type PlaybackSource } from "./playback";
+import {
+  normalizePlaybackSource,
+  validateSource,
+  type PlaybackSource,
+} from "./playback";
 import { requireClient } from "../auth/session";
 import { CatalogError, databaseError } from "./catalog-admin";
 import type { AnimeMetadata } from "../types/catalog";
@@ -105,7 +109,7 @@ export function validateEpisode(data: EpisodeInput) {
     );
   if (data.sources.length > 20)
     throw new CatalogError("Máximo 20 servidores por episodio.");
-  data.sources.forEach(validateSource);
+  data.sources.map(normalizePlaybackSource).forEach(validateSource);
 }
 export async function saveEpisode(
   animeId: string,
@@ -122,7 +126,7 @@ export async function saveEpisode(
     p_title: data.title.trim(),
     p_description: data.description,
     p_sources: data.sources.map((source, priority) => ({
-      ...source,
+      ...normalizePlaybackSource(source),
       priority,
     })),
   });

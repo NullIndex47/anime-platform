@@ -178,9 +178,9 @@ test("admin manages, orders, saves, reloads and removes sources without recreati
       .click();
     await page.getByLabel("Nombre del servidor").last().fill(s.name);
     await page
-      .getByLabel("Tipo de reproductor")
+      .getByLabel("Proveedor", { exact: true })
       .last()
-      .selectOption(s.player_type);
+      .selectOption(s.player_type === "html5" ? "html5" : "youtube");
     await page.getByLabel("URL del servidor").last().fill(s.url);
     await page.getByLabel("Fuente activa").last().check();
   }
